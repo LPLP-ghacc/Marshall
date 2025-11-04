@@ -5,6 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarshallApp"
         mc:Ignorable="d" Height="800" Width="1200" ResizeMode="CanResizeWithGrip" WindowStyle="ToolWindow" Background="{x:Null}" Foreground="#FFBDBDBD" Title="Marshall">
+    <Window.Resources>
+        <Style TargetType="ResizeGrip">
+            <Setter Property="Background" Value="DarkRed"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ResizeGrip">
+                        <Grid Background="DarkRed"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid x:Name="RootGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="LeftCol" Width="200" MaxWidth="300"/>
@@ -19,12 +31,19 @@
         </Grid.RowDefinitions>
         
         <StackPanel Grid.ColumnSpan="5" Orientation="Horizontal" Background="#222">
-            <Button x:Name="AddButton" Content="Menu" Style="{StaticResource FlatButtonStyle}" Click="AddButton_Click" Margin="5,0">
+            <Button x:Name="AddButton" Content="Menu"
+        Style="{StaticResource FlatButtonStyle}"
+        Click="AddButton_Click"
+        Margin="5,0">
                 <Button.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Add block" Click="AddBlock_Click"/>
+                    <ContextMenu Style="{StaticResource DarkContextMenuStyle}">
+                        <MenuItem Header="Add block"
+                      Click="AddBlock_Click"
+                      Style="{StaticResource DarkMenuItemStyle}"/>
                         <Separator/>
-                        <MenuItem Header="Settings" Click="Settings_Click"/>
+                        <MenuItem Header="Settings"
+                      Click="Settings_Click"
+                      Style="{StaticResource DarkMenuItemStyle}"/>
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>

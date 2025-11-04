@@ -10,6 +10,7 @@ namespace MarshallApp
 {
     public partial class MainWindow : Window
     {
+        private AppConfig appConfig;
         private readonly List<BlockElement> blocks = new();
         private Grid stack;
 
@@ -21,9 +22,14 @@ namespace MarshallApp
             ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
             ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
 
-            NewScript();
+            appConfig = ConfigManager.Load();
+
+            Width = appConfig.WindowWidth;
+            Height = appConfig.WindowHeight;
+
             LoadPanelState();
             LoadAllConfigs();
+            NewScript();
         }
 
         private void ScriptBrowser_OpenInNewPanel(string filePath)
@@ -38,7 +44,7 @@ namespace MarshallApp
             block.RunPythonScript();
 
             UpdateLayoutGrid();
-            SaveAllConfigs();
+            SaveAppConfig();
         }
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
@@ -72,7 +78,7 @@ namespace MarshallApp
             blocks.Remove(element);
             stack.Children.Remove(element);
             UpdateLayoutGrid();
-            SaveAllConfigs();
+            SaveAppConfig();
         }
 
         private void UpdateLayoutGrid()
@@ -99,42 +105,26 @@ namespace MarshallApp
             }
         }
 
-        #region Config & Panel State
-
-        private void SavePanelState()
+        private void NewScript()
         {
-            var state = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
-
-            File.WriteAllText("panel_state.json", JsonSerializer.Serialize(state));
+            CodeEditor.NewScript();
+            CodeEditor.Visibility = Visibility.Visible;
         }
 
-        private void LoadPanelState()
+        private void SaveAppConfig()
         {
-            if (File.Exists("panel_state.json"))
-            {
-                var json = File.ReadAllText("panel_state.json");
-                var state = JsonSerializer.Deserialize<PanelState>(json);
-                if (state != null)
-                {
-                    LeftCol.Width = new GridLength(state.LeftWidth);
-                    RightCol.Width = new GridLength(state.RightWidth);
-                }
-            }
-            else
-            {
+            // Обновляем состояние окна
+            appConfig.WindowWidth = this.Width;
+            appConfig.WindowHeight = this.Height;
 
-            }
-        }
+            // Обновляем состояние панелей
+            appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
 
-        #endregion
-
-        private void SaveAllConfigs()
-        {
-            var configs = new List<BlockConfig>();
-
+            // Обновляем блоки
+            appConfig.Blocks.Clear();
             foreach (var block in blocks)
             {
-                configs.Add(new BlockConfig
+                appConfig.Blocks.Add(new BlockConfig
                 {
                     PythonFilePath = block.pythonFilePath,
                     IsLooping = block.isLooping,
@@ -142,19 +132,19 @@ namespace MarshallApp
                 });
             }
 
-            ConfigManager.SaveAll(configs);
-            SavePanelState();
+            ConfigManager.Save(appConfig);
         }
 
         private void LoadAllConfigs()
         {
-            var configs = ConfigManager.LoadAll();
-            foreach (var cfg in configs)
+            foreach (var cfg in appConfig.Blocks)
             {
-                var block = new BlockElement(RemoveBlockElement);
-                block.pythonFilePath = cfg.PythonFilePath;
-                block.isLooping = cfg.IsLooping;
-                block.LoopInterval = cfg.LoopIntervalSeconds;
+                var block = new BlockElement(RemoveBlockElement)
+                {
+                    pythonFilePath = cfg.PythonFilePath,
+                    isLooping = cfg.IsLooping,
+                    LoopInterval = cfg.LoopIntervalSeconds
+                };
 
                 blocks.Add(block);
                 stack.Children.Add(block);
@@ -167,19 +157,21 @@ namespace MarshallApp
 
                 block.RestoreLoopState();
             }
+
             UpdateLayoutGrid();
         }
 
-        private void NewScript()
+        private void LoadPanelState()
         {
-            CodeEditor.NewScript();
-            CodeEditor.Visibility = Visibility.Visible;
+            var state = appConfig.PanelState;
+            LeftCol.Width = new GridLength(state.LeftWidth);
+            RightCol.Width = new GridLength(state.RightWidth);
         }
 
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-            SaveAllConfigs();
+            SaveAppConfig();
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)

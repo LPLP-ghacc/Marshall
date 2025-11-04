@@ -6,21 +6,28 @@ namespace MarshallApp
 {
     public static class ConfigManager
     {
-        private static readonly string ConfigPath = "blocks_config.json";
+        private static readonly string ConfigPath = "app_config.json";
 
-        public static void SaveAll(List<BlockConfig> configs)
+        public static void Save(AppConfig config)
         {
-            var json = JsonSerializer.Serialize(configs, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(ConfigPath, json);
         }
 
-        public static List<BlockConfig> LoadAll()
+        public static AppConfig Load()
         {
             if (!File.Exists(ConfigPath))
-                return new List<BlockConfig>();
+                return new AppConfig();
 
-            var json = File.ReadAllText(ConfigPath);
-            return JsonSerializer.Deserialize<List<BlockConfig>>(json) ?? new List<BlockConfig>();
+            try
+            {
+                var json = File.ReadAllText(ConfigPath);
+                return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+            }
+            catch
+            {
+                return new AppConfig();
+            }
         }
     }
 }

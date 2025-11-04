@@ -7,23 +7,16 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <TextBlock Text="Browser" Foreground="White" FontWeight="Bold" Margin="10" FontSize="14"/>
-        <ListBox x:Name="ScriptList" Grid.Row="1" Background="#333" Foreground="White" Margin="5">
-            <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Padding" Value="0"/>
-                    <Setter Property="Margin" Value="0"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="ListBoxItem">
-                                <ContentPresenter />
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ListBox.ItemContainerStyle>
+        <ListBox x:Name="ScriptList"
+                 Grid.Row="1"
+                 Background="#333"
+                 Foreground="White"
+                 Margin="5"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.Resources>
+                <Style TargetType="ScrollViewer" BasedOn="{StaticResource DarkScrollViewerStyle}"/>
+                <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarVertical}"/>
+            </ListBox.Resources>
         </ListBox>
     </Grid>
 </UserControl>

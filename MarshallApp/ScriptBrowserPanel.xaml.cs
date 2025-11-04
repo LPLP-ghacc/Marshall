@@ -38,15 +38,26 @@ namespace MarshallApp
                     HorizontalContentAlignment = HorizontalAlignment.Left,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Padding = new Thickness(6, 3, 6, 3),
-                    Style = (Style)FindResource("FlatButtonStyle")
+                    Style = (Style)Application.Current.FindResource("FlatButtonStyle")
                 };
 
-                var contextMenu = new ContextMenu();
+                var contextMenu = new ContextMenu
+                {
+                    Style = (Style)Application.Current.FindResource("DarkContextMenuStyle")
+                };
 
-                var openPanelItem = new MenuItem { Header = "Run in new panel" };
+                var openPanelItem = new MenuItem
+                {
+                    Header = "Run in new panel",
+                    Style = (Style)Application.Current.FindResource("DarkMenuItemStyle")
+                };
                 openPanelItem.Click += (s, e) => ScriptOpenInNewPanel?.Invoke(file);
 
-                var openFolderItem = new MenuItem { Header = "Open file location" };
+                var openFolderItem = new MenuItem
+                {
+                    Header = "Open file location",
+                    Style = (Style)Application.Current.FindResource("DarkMenuItemStyle")
+                };
                 openFolderItem.Click += (s, e) =>
                 {
                     if (File.Exists(file))
@@ -59,10 +70,7 @@ namespace MarshallApp
 
                 button.ContextMenu = contextMenu;
 
-                button.Click += (s, e) =>
-                {
-                    ScriptSelected?.Invoke(file);
-                };
+                button.Click += (s, e) => ScriptSelected?.Invoke(file);
 
                 ScriptList.Items.Add(button);
             }
