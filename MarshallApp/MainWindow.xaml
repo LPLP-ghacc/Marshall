@@ -61,12 +61,16 @@
                         <MenuItem x:Name="ScriptBrowserHideChecker" Header="Script Browser"
                                   Style="{StaticResource DarkMenuItemStyle}"
                                   IsCheckable="True"
-                                  IsChecked="{Binding LeftPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}" Checked="ScriptBrowserHideChecker_Checked"/>
+                                  IsChecked="{Binding LeftPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
+                                  Checked="ScriptBrowserHideChecker_Checked"
+                                  Unchecked="ScriptBrowserHideChecker_Unchecked"/>
 
                         <MenuItem x:Name="ScriptEditorHideChecker" Header="Code Editor"
                                   Style="{StaticResource DarkMenuItemStyle}"
                                   IsCheckable="True"
-                                  IsChecked="{Binding RightPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}" Checked="ScriptEditorHideChecker_Checked"/>
+                                  IsChecked="{Binding RightPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
+                                  Checked="ScriptEditorHideChecker_Checked"
+                                  Unchecked="ScriptEditorHideChecker_Unchecked"/>
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>

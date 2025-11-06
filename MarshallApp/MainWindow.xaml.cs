@@ -103,6 +103,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void WindowButton_Click(object sender, RoutedEventArgs e)
     {
+        Console.WriteLine($"{LeftCol.Width}, {LeftPanelVisible}");
         WindowButton.ContextMenu.PlacementTarget = WindowButton;
         WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         WindowButton.ContextMenu.IsOpen = true;
@@ -123,21 +124,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
     {
-        // кусок не работающего говнища
-        if (ScriptBrowserHideChecker.IsChecked == true)
-            LeftCol.Width = new GridLength(LeftCol.MaxWidth);
-        else
-            LeftCol.Width = new GridLength(0);
+        LeftCol.Width = new GridLength(LeftCol.MaxWidth);
     }
 
     private void ScriptEditorHideChecker_Checked(object sender, RoutedEventArgs e)
     {
-        // и это
-        if (ScriptEditorHideChecker.IsChecked == true)
-            RightCol.Width = new GridLength(RightCol.MaxWidth);
-        else
-            RightCol.Width = new GridLength(0);
+        RightCol.Width = new GridLength(RightCol.MaxWidth);
     }
+    
+    private void ScriptBrowserHideChecker_Unchecked(object sender, RoutedEventArgs e)
+    {
+        LeftCol.Width = new GridLength(0);
+    }
+
+    private void ScriptEditorHideChecker_Unchecked(object sender, RoutedEventArgs e)
+    {
+        RightCol.Width = new GridLength(0);
+    }
+    
+    public bool LeftPanelVisible => LeftCol.Width != new GridLength(0);
+    public bool RightPanelVisible => RightCol.Width != new GridLength(0);
     #endregion
 
     #region LoadSaving things
