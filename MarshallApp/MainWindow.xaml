@@ -47,6 +47,29 @@
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>
+
+            <Button x:Name="WindowButton" Content="Window"
+                    Style="{StaticResource FlatButtonStyle}"
+                    Click="WindowButton_Click"
+                    Margin="5,0">
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="WindowContextMenu" 
+                                 Style="{StaticResource DarkContextMenuStyle}"
+                                 PlacementTarget="{Binding ElementName=WindowButton}"
+                                 StaysOpen="False">
+
+                        <MenuItem x:Name="ScriptBrowserHideChecker" Header="Script Browser"
+                                  Style="{StaticResource DarkMenuItemStyle}"
+                                  IsCheckable="True"
+                                  IsChecked="{Binding LeftPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}" Checked="ScriptBrowserHideChecker_Checked"/>
+
+                        <MenuItem x:Name="ScriptEditorHideChecker" Header="Code Editor"
+                                  Style="{StaticResource DarkMenuItemStyle}"
+                                  IsCheckable="True"
+                                  IsChecked="{Binding RightPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}" Checked="ScriptEditorHideChecker_Checked"/>
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
         </StackPanel>
 
         <local:ScriptBrowserPanel x:Name="ScriptBrowser" Grid.Row="1" Grid.Column="0" 

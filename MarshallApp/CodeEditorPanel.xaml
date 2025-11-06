@@ -9,7 +9,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Верхняя панель инструментов -->
         <StackPanel Orientation="Horizontal" Background="#252526" Grid.Row="0">
             <TextBlock x:Name="FileNameText"
                Text="new_script.py"
@@ -22,8 +21,7 @@
             <Button Content="Save" Width="90" Margin="3" Click="SaveButton_Click" Style="{StaticResource FlatButtonStyle}"/>
             <Button Content="Save As" Width="110" Margin="3" Click="SaveAsButton_Click" Style="{StaticResource FlatButtonStyle}"/>
         </StackPanel>
-
-        <!-- Текстовый редактор -->
+        
         <avalon:TextEditor Grid.Row="1"
                            x:Name="Editor"
                            FontFamily="Consolas"
@@ -31,6 +29,9 @@
                            SyntaxHighlighting="Python"
                            Background="#1E1E1E"
                            Foreground="#D4D4D4"
-                           ShowLineNumbers="True"/>
+                           ShowLineNumbers="True"
+                           >
+            
+        </avalon:TextEditor>
     </Grid>
 </UserControl>

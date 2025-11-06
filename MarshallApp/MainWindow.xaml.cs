@@ -1,14 +1,15 @@
-﻿using MarshallApp.Models;
+﻿// Leia - Yuyoyuppe(ゆよゆっぺ)
+
+using MarshallApp.Models;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace MarshallApp
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private AppConfig appConfig;
         private readonly List<BlockElement> blocks = new();
@@ -17,6 +18,7 @@ namespace MarshallApp
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this;
             stack = MStackPanel;
 
             ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
@@ -32,45 +34,10 @@ namespace MarshallApp
             NewScript();
         }
 
-        private void ScriptBrowser_OpenInNewPanel(string filePath)
+        private void NewScript()
         {
-            var block = new BlockElement(RemoveBlockElement)
-            {
-                pythonFilePath = filePath
-            };
-
-            blocks.Add(block);
-            stack.Children.Add(block);
-            block.RunPythonScript();
-
-            UpdateLayoutGrid();
-            SaveAppConfig();
-        }
-
-        private void AddButton_Click(object sender, RoutedEventArgs e)
-        {
-            AddButton.ContextMenu.PlacementTarget = AddButton;
-            AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-            AddButton.ContextMenu.IsOpen = true;
-        }
-
-        private void AddBlock_Click(object sender, RoutedEventArgs e)
-        {
-            AddBlockElement();
-        }
-
-        private void ScriptBrowser_ScriptSelected(string filePath)
-        {
-            CodeEditor.LoadScript(filePath);
+            CodeEditor.NewScript();
             CodeEditor.Visibility = Visibility.Visible;
-        }
-
-        private void AddBlockElement()
-        {
-            var block = new BlockElement(RemoveBlockElement);
-            blocks.Add(block);
-            stack.Children.Add(block);
-            UpdateLayoutGrid();
         }
 
         private void RemoveBlockElement(BlockElement element)
@@ -105,22 +72,84 @@ namespace MarshallApp
             }
         }
 
-        private void NewScript()
+        #region Script Browser
+        private void ScriptBrowser_OpenInNewPanel(string filePath)
         {
-            CodeEditor.NewScript();
+            var block = new BlockElement(RemoveBlockElement)
+            {
+                pythonFilePath = filePath
+            };
+
+            blocks.Add(block);
+            stack.Children.Add(block);
+            block.RunPythonScript();
+
+            UpdateLayoutGrid();
+            SaveAppConfig();
+        }
+
+        private void ScriptBrowser_ScriptSelected(string filePath)
+        {
+            CodeEditor.LoadScript(filePath);
             CodeEditor.Visibility = Visibility.Visible;
         }
+        #endregion
+
+        #region Top Panel Menu
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            AddButton.ContextMenu.PlacementTarget = AddButton;
+            AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            AddButton.ContextMenu.IsOpen = true;
+        }
+
+        private void WindowButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowButton.ContextMenu.PlacementTarget = WindowButton;
+            WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            WindowButton.ContextMenu.IsOpen = true;
+        }
+
+        private void AddBlock_Click(object sender, RoutedEventArgs e)
+        {
+            var block = new BlockElement(RemoveBlockElement);
+            blocks.Add(block);
+            stack.Children.Add(block);
+            UpdateLayoutGrid();
+        }
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Настройки скоро будут здесь...");
+        }
+
+        private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
+        {
+            // кусок не работающего говнища
+            if (ScriptBrowserHideChecker.IsChecked == true)
+                LeftCol.Width = new GridLength(LeftCol.MaxWidth);
+            else
+                LeftCol.Width = new GridLength(0);
+        }
+
+        private void ScriptEditorHideChecker_Checked(object sender, RoutedEventArgs e)
+        {
+            // и это
+            if (ScriptEditorHideChecker.IsChecked == true)
+                RightCol.Width = new GridLength(RightCol.MaxWidth);
+            else
+                RightCol.Width = new GridLength(0);
+        }
+        #endregion
+
+        #region LoadSaving things
 
         private void SaveAppConfig()
         {
-            // Обновляем состояние окна
             appConfig.WindowWidth = this.Width;
             appConfig.WindowHeight = this.Height;
-
-            // Обновляем состояние панелей
             appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
 
-            // Обновляем блоки
             appConfig.Blocks.Clear();
             foreach (var block in blocks)
             {
@@ -167,15 +196,12 @@ namespace MarshallApp
             RightCol.Width = new GridLength(state.RightWidth);
         }
 
+        #endregion
+
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
             SaveAppConfig();
-        }
-
-        private void Settings_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Настройки скоро будут здесь...");
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
