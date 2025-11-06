@@ -7,205 +7,202 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MarshallApp
+namespace MarshallApp;
+
+public partial class MainWindow : Window, INotifyPropertyChanged
 {
-    public partial class MainWindow : Window, INotifyPropertyChanged
+    private readonly AppConfig appConfig;
+    private readonly List<BlockElement> blocks = new();
+
+    public MainWindow()
     {
-        private AppConfig appConfig;
-        private readonly List<BlockElement> blocks = new();
-        private Grid stack;
+        InitializeComponent();
+        DataContext = this;
 
-        public MainWindow()
+        ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
+        ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
+
+        appConfig = ConfigManager.Load();
+
+        Width = appConfig.WindowWidth;
+        Height = appConfig.WindowHeight;
+
+        LoadPanelState();
+        LoadAllConfigs();
+        NewScript();
+    }
+
+    private void NewScript()
+    {
+        CodeEditor.NewScript();
+        CodeEditor.Visibility = Visibility.Visible;
+    }
+
+    private void RemoveBlockElement(BlockElement element)
+    {
+        blocks.Remove(element);
+        MStackPanel.Children.Remove(element);
+        UpdateLayoutGrid();
+        SaveAppConfig();
+    }
+
+    private void UpdateLayoutGrid()
+    {
+        int total = MStackPanel.Children.Count;
+        if (total == 0) return;
+
+        int columns = (int)Math.Ceiling(Math.Sqrt(total));
+        int rows = (int)Math.Ceiling((double)total / columns);
+
+        MStackPanel.RowDefinitions.Clear();
+        MStackPanel.ColumnDefinitions.Clear();
+
+        for (int i = 0; i < rows; i++)
+            MStackPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        for (int j = 0; j < columns; j++)
+            MStackPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        for (int i = 0; i < total; i++)
         {
-            InitializeComponent();
-            DataContext = this;
-            stack = MStackPanel;
-
-            ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
-            ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
-
-            appConfig = ConfigManager.Load();
-
-            Width = appConfig.WindowWidth;
-            Height = appConfig.WindowHeight;
-
-            LoadPanelState();
-            LoadAllConfigs();
-            NewScript();
+            var element = MStackPanel.Children[i];
+            Grid.SetRow(element, i / columns);
+            Grid.SetColumn(element, i % columns);
         }
+    }
 
-        private void NewScript()
+    #region Script Browser
+    private void ScriptBrowser_OpenInNewPanel(string filePath)
+    {
+        var block = new BlockElement(RemoveBlockElement)
         {
-            CodeEditor.NewScript();
-            CodeEditor.Visibility = Visibility.Visible;
-        }
+            pythonFilePath = filePath
+        };
 
-        private void RemoveBlockElement(BlockElement element)
+        blocks.Add(block);
+        MStackPanel.Children.Add(block);
+        block.RunPythonScript();
+
+        UpdateLayoutGrid();
+        SaveAppConfig();
+    }
+
+    private void ScriptBrowser_ScriptSelected(string filePath)
+    {
+        CodeEditor.LoadScript(filePath);
+        CodeEditor.Visibility = Visibility.Visible;
+    }
+    #endregion
+
+    #region Top Panel Menu
+    private void AddButton_Click(object sender, RoutedEventArgs e)
+    {
+        AddButton.ContextMenu.PlacementTarget = AddButton;
+        AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        AddButton.ContextMenu.IsOpen = true;
+    }
+
+    private void WindowButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowButton.ContextMenu.PlacementTarget = WindowButton;
+        WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        WindowButton.ContextMenu.IsOpen = true;
+    }
+
+    private void AddBlock_Click(object sender, RoutedEventArgs e)
+    {
+        var block = new BlockElement(RemoveBlockElement);
+        blocks.Add(block);
+        MStackPanel.Children.Add(block);
+        UpdateLayoutGrid();
+    }
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("Настройки скоро будут здесь...");
+    }
+
+    private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
+    {
+        // кусок не работающего говнища
+        if (ScriptBrowserHideChecker.IsChecked == true)
+            LeftCol.Width = new GridLength(LeftCol.MaxWidth);
+        else
+            LeftCol.Width = new GridLength(0);
+    }
+
+    private void ScriptEditorHideChecker_Checked(object sender, RoutedEventArgs e)
+    {
+        // и это
+        if (ScriptEditorHideChecker.IsChecked == true)
+            RightCol.Width = new GridLength(RightCol.MaxWidth);
+        else
+            RightCol.Width = new GridLength(0);
+    }
+    #endregion
+
+    #region LoadSaving things
+
+    private void SaveAppConfig()
+    {
+        appConfig.WindowWidth = this.Width;
+        appConfig.WindowHeight = this.Height;
+        appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
+
+        appConfig.Blocks.Clear();
+        foreach (var block in blocks)
         {
-            blocks.Remove(element);
-            stack.Children.Remove(element);
-            UpdateLayoutGrid();
-            SaveAppConfig();
-        }
-
-        private void UpdateLayoutGrid()
-        {
-            int total = stack.Children.Count;
-            if (total == 0) return;
-
-            int columns = (int)Math.Ceiling(Math.Sqrt(total));
-            int rows = (int)Math.Ceiling((double)total / columns);
-
-            stack.RowDefinitions.Clear();
-            stack.ColumnDefinitions.Clear();
-
-            for (int i = 0; i < rows; i++)
-                stack.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            for (int j = 0; j < columns; j++)
-                stack.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            for (int i = 0; i < total; i++)
+            appConfig.Blocks.Add(new BlockConfig
             {
-                var element = stack.Children[i];
-                Grid.SetRow(element, i / columns);
-                Grid.SetColumn(element, i % columns);
-            }
+                PythonFilePath = block.pythonFilePath,
+                IsLooping = block.isLooping,
+                LoopIntervalSeconds = block.LoopInterval
+            });
         }
 
-        #region Script Browser
-        private void ScriptBrowser_OpenInNewPanel(string filePath)
+        ConfigManager.Save(appConfig);
+    }
+
+    private void LoadAllConfigs()
+    {
+        foreach (var cfg in appConfig.Blocks)
         {
             var block = new BlockElement(RemoveBlockElement)
             {
-                pythonFilePath = filePath
+                pythonFilePath = cfg.PythonFilePath,
+                isLooping = cfg.IsLooping,
+                LoopInterval = cfg.LoopIntervalSeconds
             };
 
             blocks.Add(block);
-            stack.Children.Add(block);
-            block.RunPythonScript();
+            MStackPanel.Children.Add(block);
 
-            UpdateLayoutGrid();
-            SaveAppConfig();
-        }
-
-        private void ScriptBrowser_ScriptSelected(string filePath)
-        {
-            CodeEditor.LoadScript(filePath);
-            CodeEditor.Visibility = Visibility.Visible;
-        }
-        #endregion
-
-        #region Top Panel Menu
-        private void AddButton_Click(object sender, RoutedEventArgs e)
-        {
-            AddButton.ContextMenu.PlacementTarget = AddButton;
-            AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-            AddButton.ContextMenu.IsOpen = true;
-        }
-
-        private void WindowButton_Click(object sender, RoutedEventArgs e)
-        {
-            WindowButton.ContextMenu.PlacementTarget = WindowButton;
-            WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-            WindowButton.ContextMenu.IsOpen = true;
-        }
-
-        private void AddBlock_Click(object sender, RoutedEventArgs e)
-        {
-            var block = new BlockElement(RemoveBlockElement);
-            blocks.Add(block);
-            stack.Children.Add(block);
-            UpdateLayoutGrid();
-        }
-
-        private void Settings_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Настройки скоро будут здесь...");
-        }
-
-        private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
-        {
-            // кусок не работающего говнища
-            if (ScriptBrowserHideChecker.IsChecked == true)
-                LeftCol.Width = new GridLength(LeftCol.MaxWidth);
-            else
-                LeftCol.Width = new GridLength(0);
-        }
-
-        private void ScriptEditorHideChecker_Checked(object sender, RoutedEventArgs e)
-        {
-            // и это
-            if (ScriptEditorHideChecker.IsChecked == true)
-                RightCol.Width = new GridLength(RightCol.MaxWidth);
-            else
-                RightCol.Width = new GridLength(0);
-        }
-        #endregion
-
-        #region LoadSaving things
-
-        private void SaveAppConfig()
-        {
-            appConfig.WindowWidth = this.Width;
-            appConfig.WindowHeight = this.Height;
-            appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
-
-            appConfig.Blocks.Clear();
-            foreach (var block in blocks)
+            if (!string.IsNullOrEmpty(block.pythonFilePath) && File.Exists(block.pythonFilePath))
             {
-                appConfig.Blocks.Add(new BlockConfig
-                {
-                    PythonFilePath = block.pythonFilePath,
-                    IsLooping = block.isLooping,
-                    LoopIntervalSeconds = block.LoopInterval
-                });
+                block.SetFileNameText();
+                block.RunPythonScript();
             }
-
-            ConfigManager.Save(appConfig);
+            block.RestoreLoopState();
         }
 
-        private void LoadAllConfigs()
-        {
-            foreach (var cfg in appConfig.Blocks)
-            {
-                var block = new BlockElement(RemoveBlockElement)
-                {
-                    pythonFilePath = cfg.PythonFilePath,
-                    isLooping = cfg.IsLooping,
-                    LoopInterval = cfg.LoopIntervalSeconds
-                };
-
-                blocks.Add(block);
-                stack.Children.Add(block);
-
-                if (!string.IsNullOrEmpty(block.pythonFilePath) && File.Exists(block.pythonFilePath))
-                {
-                    block.SetFileNameText();
-                    block.RunPythonScript();
-                }
-                block.RestoreLoopState();
-            }
-
-            UpdateLayoutGrid();
-        }
-
-        private void LoadPanelState()
-        {
-            var state = appConfig.PanelState;
-            LeftCol.Width = new GridLength(state.LeftWidth);
-            RightCol.Width = new GridLength(state.RightWidth);
-        }
-
-        #endregion
-
-        protected override void OnClosing(CancelEventArgs e)
-        {
-            base.OnClosing(e);
-            SaveAppConfig();
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? name = null) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        UpdateLayoutGrid();
     }
+
+    private void LoadPanelState()
+    {
+        var state = appConfig.PanelState;
+        LeftCol.Width = new GridLength(state.LeftWidth);
+        RightCol.Width = new GridLength(state.RightWidth);
+    }
+
+    #endregion
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        SaveAppConfig();
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
