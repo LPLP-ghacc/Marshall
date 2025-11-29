@@ -4,20 +4,29 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarshallApp"
-        mc:Ignorable="d" Height="800" Width="1200" ResizeMode="CanResizeWithGrip" WindowStyle="ToolWindow" Background="{x:Null}" Foreground="#FFBDBDBD" Title="Marshall">
+        xmlns:resource="clr-namespace:MarshallApp.Resource"
+        mc:Ignorable="d" Height="800" Width="1200" ResizeMode="CanResizeWithGrip" WindowStyle="ToolWindow" Background="{x:Null}" Foreground="{StaticResource PrimaryTextBrush}" Title="Marshall">
     <Window.Resources>
         <Style TargetType="ResizeGrip">
-            <Setter Property="Background" Value="DarkRed"/>
+            <Setter Property="Background" Value="{StaticResource PrimaryAccentBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ResizeGrip">
-                        <Grid Background="DarkRed"/>
+                        <Grid Background="{StaticResource PrimaryAccentBrush}"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
     </Window.Resources>
     <Grid x:Name="RootGrid">
+        <Grid.Background>  
+            <ImageBrush x:Name="RootImageBrush" Stretch="UniformToFill"/>     
+        </Grid.Background>
+        <!-- 
+        <Grid.Effect>
+            <resource:DarkenEffect Darkness="0.5"/>
+        </Grid.Effect>
+        !-->
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="LeftCol" Width="200" MaxWidth="300"/>
             <ColumnDefinition Width="8"/>
@@ -29,8 +38,8 @@
             <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <StackPanel Grid.ColumnSpan="5" Orientation="Horizontal" Background="#222">
+
+        <StackPanel Grid.ColumnSpan="5" Orientation="Horizontal" Background="{StaticResource AdditionalBrush2}">
             <Button x:Name="AddButton" Content="Menu"
         Style="{StaticResource FlatButtonStyle}"
         Click="AddButton_Click"
@@ -82,9 +91,9 @@
         
         <GridSplitter Grid.Row="1" Grid.Column="1" Width="8" Background="#333" HorizontalAlignment="Stretch"/>
 
-        <Grid x:Name="MStackPanel" Grid.Row="1" Grid.Column="2" Background="#111"/>
+        <Grid x:Name="MStackPanel" Grid.Row="1" Grid.Column="2" Background="{StaticResource PrimaryBrushA}"/>
 
-        <GridSplitter Grid.Row="1" Grid.Column="3" Width="8" Background="#333" HorizontalAlignment="Stretch"/>
+        <GridSplitter Grid.Row="1" Grid.Column="3" Width="8" Background="{StaticResource AdditionalBrush}" HorizontalAlignment="Stretch"/>
 
         <local:CodeEditorPanel x:Name="CodeEditor" Grid.Row="1" Grid.Column="4"/>
     </Grid>

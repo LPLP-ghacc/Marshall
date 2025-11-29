@@ -7,30 +7,50 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
+using MarshallApp.Controllers;
 
 namespace MarshallApp;
 
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
-    private readonly AppConfig appConfig;
-    private readonly List<BlockElement> blocks = [];
+    private readonly AppConfig _appConfig;
+    private readonly List<BlockElement> _blocks = [];
+    private WallpaperController? _wallControl;
+    private readonly DispatcherTimer _wallpaperTimer = new();
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
 
+        WallpaperControlInit();
+
         ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
         ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
 
-        appConfig = ConfigManager.Load();
+        _appConfig = ConfigManager.Load();
 
-        Width = appConfig.WindowWidth;
-        Height = appConfig.WindowHeight;
+        Width = _appConfig.WindowWidth;
+        Height = _appConfig.WindowHeight;
 
         LoadPanelState();
         LoadAllConfigs();
         NewScript();
+    }
+
+    private void WallpaperControlInit()
+    {
+        var imagesSource = Path.Combine(Environment.CurrentDirectory + "/Resources/BackgroundImages");
+        _wallControl = new WallpaperController(RootImageBrush, imagesSource);
+        _wallControl.Update();
+        
+        _wallpaperTimer.Interval = TimeSpan.FromSeconds(30);
+        _wallpaperTimer.Tick += (_, _) =>
+        {
+            _wallControl.Update();
+        };
+        _wallpaperTimer.Start();
     }
 
     private void NewScript()
@@ -41,7 +61,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RemoveBlockElement(BlockElement element)
     {
-        blocks.Remove(element);
+        _blocks.Remove(element);
         MStackPanel.Children.Remove(element);
         UpdateLayoutGrid();
         SaveAppConfig();
@@ -49,21 +69,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void UpdateLayoutGrid()
     {
-        int total = MStackPanel.Children.Count;
+        var total = MStackPanel.Children.Count;
         if(total == 0) return;
 
-        int columns = (int)Math.Ceiling(Math.Sqrt(total));
-        int rows = (int)Math.Ceiling((double)total / columns);
+        var columns = (int)Math.Ceiling(Math.Sqrt(total));
+        var rows = (int)Math.Ceiling((double)total / columns);
 
         MStackPanel.RowDefinitions.Clear();
         MStackPanel.ColumnDefinitions.Clear();
 
-        for(int i = 0; i < rows; i++)
+        for(var i = 0; i < rows; i++)
             MStackPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        for(int j = 0; j < columns; j++)
+        for(var j = 0; j < columns; j++)
             MStackPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        for(int i = 0; i < total; i++)
+        for(var i = 0; i < total; i++)
         {
             var element = MStackPanel.Children[i];
             Grid.SetRow(element, i / columns);
@@ -79,7 +99,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             pythonFilePath = filePath
         };
 
-        blocks.Add(block);
+        _blocks.Add(block);
         MStackPanel.Children.Add(block);
         block.RunPythonScript();
 
@@ -97,6 +117,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     #region Top Panel Menu
     private void AddButton_Click(object sender, RoutedEventArgs e)
     {
+        if (AddButton.ContextMenu == null) return;
         AddButton.ContextMenu.PlacementTarget = AddButton;
         AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         AddButton.ContextMenu.IsOpen = true;
@@ -105,6 +126,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void WindowButton_Click(object sender, RoutedEventArgs e)
     {
         Console.WriteLine($"{LeftCol.Width}, {LeftPanelVisible}");
+        
+        if (WindowButton.ContextMenu == null) return;
         WindowButton.ContextMenu.PlacementTarget = WindowButton;
         WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         WindowButton.ContextMenu.IsOpen = true;
@@ -113,7 +136,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void AddBlock_Click(object sender, RoutedEventArgs e)
     {
         var block = new BlockElement(RemoveBlockElement);
-        blocks.Add(block);
+        _blocks.Add(block);
         MStackPanel.Children.Add(block);
         UpdateLayoutGrid();
     }
@@ -151,14 +174,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SaveAppConfig()
     {
-        appConfig.WindowWidth = Width;
-        appConfig.WindowHeight = Height;
-        appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
+        _appConfig.WindowWidth = Width;
+        _appConfig.WindowHeight = Height;
+        _appConfig.PanelState = new PanelState(LeftCol.Width.Value, RightCol.Width.Value);
 
-        appConfig.Blocks.Clear();
-        foreach(var block in blocks)
+        _appConfig.Blocks.Clear();
+        foreach(var block in _blocks)
         {
-            appConfig.Blocks.Add(new BlockConfig
+            _appConfig.Blocks.Add(new BlockConfig
             {
                 PythonFilePath = block.pythonFilePath,
                 IsLooping = block.isLooping,
@@ -166,12 +189,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             });
         }
 
-        ConfigManager.Save(appConfig);
+        ConfigManager.Save(_appConfig);
     }
 
     private void LoadAllConfigs()
     {
-        foreach(var cfg in appConfig.Blocks)
+        foreach(var cfg in _appConfig.Blocks)
         {
             var block = new BlockElement(RemoveBlockElement)
             {
@@ -180,7 +203,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 LoopInterval = cfg.LoopIntervalSeconds
             };
 
-            blocks.Add(block);
+            _blocks.Add(block);
             MStackPanel.Children.Add(block);
 
             if(!string.IsNullOrEmpty(block.pythonFilePath) && File.Exists(block.pythonFilePath))
@@ -196,7 +219,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void LoadPanelState()
     {
-        var state = appConfig.PanelState;
+        var state = _appConfig.PanelState;
         LeftCol.Width = new GridLength(state.LeftWidth);
         RightCol.Width = new GridLength(state.RightWidth);
     }

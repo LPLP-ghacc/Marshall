@@ -15,18 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resources\Icons\copy.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Icons\input.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Icons\loop.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
   </ItemGroup>
 
@@ -36,6 +24,29 @@
 
   <ItemGroup>
     <None Include="C:\Users\alpha\source\repos\MarshallApp\MarshallApp\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46.jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (2).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (3).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (4).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (5).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (6).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (7).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (8).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (9).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-46 (10).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-47.jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-47 (2).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-47 (3).jpg" />
+    <None Remove="Resources\BackgroundImages\photo_2025-11-29_22-35-47 (4).jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resource\Darken.fx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>
