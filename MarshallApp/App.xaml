@@ -283,6 +283,8 @@
             </Setter>
         </Style>
         
+        
+        
         <Color x:Key="PrimaryColor">#111</Color>
         <Brush x:Key="PrimaryBrush">#111</Brush>
         <Color x:Key="AdditionalColor">#333</Color>
@@ -296,4 +298,6 @@
         <Color x:Key="PrimaryTextColor">#FFBDBDBD</Color>
         <Brush x:Key="PrimaryTextBrush">#FFBDBDBD</Brush>
     </Application.Resources>
+    
+    
 </Application>

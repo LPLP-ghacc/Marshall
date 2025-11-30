@@ -44,9 +44,50 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resource\Darken.fx">
+    <Resource Include="Resource\Darken.ps">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
+    <None Remove="Resource\Darken.ps.bytes" />
+    <Resource Include="Resource\Darken.ps.bytes">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46.jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (2).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (3).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (4).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (5).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (6).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (7).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (8).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (9).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-46 (10).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-47.jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-47 (2).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-47 (3).jpg" />
+    <None Remove="Resource\BackgroundImages\photo_2025-11-29_22-35-47 (4).jpg" />
+    <None Remove="Resource\Icons\copy.png" />
+    <Content Include="Resource\Icons\copy.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Icons\input.png" />
+    <Content Include="Resource\Icons\input.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Icons\loop.png" />
+    <Content Include="Resource\Icons\loop.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Icons\cancel.png" />
+    <Content Include="Resource\Icons\cancel.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Background\1.png" />
+    <Content Include="Resource\Background\1.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

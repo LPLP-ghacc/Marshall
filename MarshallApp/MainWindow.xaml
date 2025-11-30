@@ -1,12 +1,50 @@
-﻿<Window x:Class="MarshallApp.MainWindow"
+﻿<Window x:Class="MarshallApp.MainWindow" x:Name="PrimWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarshallApp"
         xmlns:resource="clr-namespace:MarshallApp.Resource"
-        mc:Ignorable="d" Height="800" Width="1200" ResizeMode="CanResizeWithGrip" WindowStyle="ToolWindow" Background="{x:Null}" Foreground="{StaticResource PrimaryTextBrush}" Title="Marshall">
+        xmlns:chrome="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        mc:Ignorable="d"
+        Height="800" Width="1200" 
+        ResizeMode="CanResizeWithGrip" 
+        WindowStyle="None"
+        Background="{StaticResource PrimaryBrush}" 
+        Foreground="{StaticResource PrimaryTextBrush}" 
+        Title="Marshall">
+    
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            CaptionHeight="0"
+            ResizeBorderThickness="2" 
+            CornerRadius="5"
+            GlassFrameThickness="5"/>
+    </WindowChrome.WindowChrome>
+    
     <Window.Resources>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#CCFFFFFF"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="chrome:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#33FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="ResizeGrip">
             <Setter Property="Background" Value="{StaticResource PrimaryAccentBrush}"/>
             <Setter Property="Template">
@@ -18,15 +56,11 @@
             </Setter>
         </Style>
     </Window.Resources>
+    
     <Grid x:Name="RootGrid">
         <Grid.Background>  
             <ImageBrush x:Name="RootImageBrush" Stretch="UniformToFill"/>     
         </Grid.Background>
-        <!-- 
-        <Grid.Effect>
-            <resource:DarkenEffect Darkness="0.5"/>
-        </Grid.Effect>
-        !-->
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="LeftCol" Width="200" MaxWidth="300"/>
             <ColumnDefinition Width="8"/>
@@ -39,51 +73,99 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.ColumnSpan="5" Orientation="Horizontal" Background="{StaticResource AdditionalBrush2}">
-            <Button x:Name="AddButton" Content="Menu"
-        Style="{StaticResource FlatButtonStyle}"
-        Click="AddButton_Click"
-        Margin="5,0">
-                <Button.ContextMenu>
-                    <ContextMenu Style="{StaticResource DarkContextMenuStyle}">
-                        <MenuItem Header="Add block"
-                      Click="AddBlock_Click"
-                      Style="{StaticResource DarkMenuItemStyle}"/>
-                        <Separator/>
-                        <MenuItem Header="Settings"
-                      Click="Settings_Click"
-                      Style="{StaticResource DarkMenuItemStyle}"/>
-                    </ContextMenu>
-                </Button.ContextMenu>
-            </Button>
+        <Border Grid.ColumnSpan="5">
+            <Border.Effect>
+                <BlurEffect Radius="1" RenderingBias="Performance"/>
+            </Border.Effect>
+            <Grid>
+                <StackPanel Orientation="Horizontal" Background="{StaticResource AdditionalBrush2}">
+                    <TextBlock Text=" ❍ Marshall" 
+                               Width="70"
+                               Foreground="White" 
+                               FontSize="13" 
+                               FontWeight="SemiBold"
+                               Margin="5"/>
+                    <StackPanel  Orientation="Horizontal">
+                        <Button x:Name="AddButton" Content="Menu" Padding="5"
+                                        Style="{StaticResource FlatButtonStyle}"
+                                        Click="AddButton_Click"
+                                        Margin="5,0">
+                            <Button.ContextMenu>
+                                <ContextMenu Style="{StaticResource DarkContextMenuStyle}">
+                                    <MenuItem Header="Add block"
+                                                      Click="AddBlock_Click"
+                                                      Style="{StaticResource DarkMenuItemStyle}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Settings"
+                                              Click="Settings_Click"
+                                              Style="{StaticResource DarkMenuItemStyle}"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button x:Name="WindowButton" Content="Window" Padding="5"
+                                Style="{StaticResource FlatButtonStyle}"
+                                Click="WindowButton_Click"
+                                Margin="5,0">
+                            <Button.ContextMenu>
+                                <ContextMenu x:Name="WindowContextMenu" 
+                                                     Style="{StaticResource DarkContextMenuStyle}"
+                                                     PlacementTarget="{Binding ElementName=WindowButton}"
+                                                     StaysOpen="False">
 
-            <Button x:Name="WindowButton" Content="Window"
-                    Style="{StaticResource FlatButtonStyle}"
-                    Click="WindowButton_Click"
-                    Margin="5,0">
-                <Button.ContextMenu>
-                    <ContextMenu x:Name="WindowContextMenu" 
-                                 Style="{StaticResource DarkContextMenuStyle}"
-                                 PlacementTarget="{Binding ElementName=WindowButton}"
-                                 StaysOpen="False">
+                                    <MenuItem x:Name="ScriptBrowserHideChecker" Header="Script Browser"
+                                              Style="{StaticResource DarkMenuItemStyle}"
+                                              IsCheckable="True"
+                                              IsChecked="{Binding LeftPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              Checked="ScriptBrowserHideChecker_Checked"
+                                              Unchecked="ScriptBrowserHideChecker_Unchecked"/>
 
-                        <MenuItem x:Name="ScriptBrowserHideChecker" Header="Script Browser"
-                                  Style="{StaticResource DarkMenuItemStyle}"
-                                  IsCheckable="True"
-                                  IsChecked="{Binding LeftPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
-                                  Checked="ScriptBrowserHideChecker_Checked"
-                                  Unchecked="ScriptBrowserHideChecker_Unchecked"/>
+                                    <MenuItem x:Name="ScriptEditorHideChecker" Header="Code Editor"
+                                              Style="{StaticResource DarkMenuItemStyle}"
+                                              IsCheckable="True"
+                                              IsChecked="{Binding RightPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              Checked="ScriptEditorHideChecker_Checked"
+                                              Unchecked="ScriptEditorHideChecker_Unchecked"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <Button x:Name="Fullscreen" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Fullscreen_Click">
+                        <Grid>
+                            <Path x:Name="FullscreenEnter" 
+                                  Data="M0,8 L0,0 L8,0 M8,8 L8,16 L0,16 M16,8 L16,0 L8,0 M8,8 L8,16 L16,16"
+                                  Stroke="#CCFFFFFF" 
+                                  StrokeThickness="2"
+                                  StrokeLineJoin="Round"
+                                  Stretch="Uniform"
+                                  Width="14" Height="14"
+                                  Visibility="Visible"/>
+                            <Path x:Name="FullscreenExit" 
+                                  Data="M4,0 L4,8 L0,8 M12,0 L12,8 L16,8 M4,16 L4,8 L0,8 M12,16 L12,8 L16,8"
+                                  Stroke="#CCFFFFFF" 
+                                  StrokeThickness="2"
+                                  StrokeLineJoin="Round"
+                                  Stretch="Uniform"
+                                  Width="14" Height="14"
+                                  Visibility="Collapsed"/>
+                        </Grid>
+                    </Button>
+                    <Button x:Name="Exit" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Close_Click">
+                        <Path Data="M14.5,13.5 L1.5,0.5 M1.5,13.5 L14.5,0.5" 
+                              Stroke="#CCFFFFFF" 
+                              StrokeThickness="2.3" 
+                              StrokeLineJoin="Round"
+                              Stretch="Uniform"
+                              Width="14" Height="14"/>
+                    </Button>
+                </StackPanel>
 
-                        <MenuItem x:Name="ScriptEditorHideChecker" Header="Code Editor"
-                                  Style="{StaticResource DarkMenuItemStyle}"
-                                  IsCheckable="True"
-                                  IsChecked="{Binding RightPanelVisible, RelativeSource={RelativeSource AncestorType=Window}}"
-                                  Checked="ScriptEditorHideChecker_Checked"
-                                  Unchecked="ScriptEditorHideChecker_Unchecked"/>
-                    </ContextMenu>
-                </Button.ContextMenu>
-            </Button>
-        </StackPanel>
+            </Grid>
+
+            
+        </Border>
+        
 
         <local:ScriptBrowserPanel x:Name="ScriptBrowser" Grid.Row="1" Grid.Column="0" 
                               ScriptSelected="ScriptBrowser_ScriptSelected"
@@ -91,7 +173,8 @@
         
         <GridSplitter Grid.Row="1" Grid.Column="1" Width="8" Background="#333" HorizontalAlignment="Stretch"/>
 
-        <Grid x:Name="MStackPanel" Grid.Row="1" Grid.Column="2" Background="{StaticResource PrimaryBrushA}"/>
+        <Grid x:Name="MStackPanel" Grid.Row="1" Grid.Column="2" UseLayoutRounding="True" SnapsToDevicePixels="True">
+        </Grid>
 
         <GridSplitter Grid.Row="1" Grid.Column="3" Width="8" Background="{StaticResource AdditionalBrush}" HorizontalAlignment="Stretch"/>
 

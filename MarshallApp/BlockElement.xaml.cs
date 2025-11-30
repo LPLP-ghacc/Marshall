@@ -2,6 +2,7 @@
 
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -14,23 +15,61 @@ namespace MarshallApp;
 
 public partial class BlockElement : UserControl
 {
-    public Action<BlockElement>? OnRemove;
-    public string? pythonFilePath;
-    public bool isLooping = false;
+    private readonly Action<BlockElement>? _onRemove;
+    public string? PythonFilePath;
+    public bool IsLooping = false;
     public double LoopInterval { get; set; } = 5.0;
-    private DispatcherTimer? loopTimer;
-    private Process? activeProcess;
-    private bool isInputVisible = false;
+    private DispatcherTimer? _loopTimer;
+    private Process? _activeProcess;
+    private bool _isInputVisible = false;
 
     public BlockElement(Action<BlockElement>? onRemove)
     {
         InitializeComponent();
-        OnRemove = onRemove;
+        _onRemove = onRemove;
+    }
+    
+    private static bool IsPythonInstalled()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "python",
+                Arguments = "--version",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            process?.WaitForExit(2000);
+
+            return process is { ExitCode: 0 };
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    private static void OpenPythonDownloadPage()
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://www.python.org/downloads/",
+            UseShellExecute = true
+        });
     }
 
     public void RunPythonScript()
     {
-        if (string.IsNullOrEmpty(pythonFilePath) || !File.Exists(pythonFilePath))
+        if (!IsPythonInstalled())
+        {
+            OpenPythonDownloadPage();
+        }
+        
+        if (string.IsNullOrEmpty(PythonFilePath) || !File.Exists(PythonFilePath))
         {
             OutputText.Text = "File not found or not selected!";
             return;
@@ -45,20 +84,22 @@ public partial class BlockElement : UserControl
             var psi = new ProcessStartInfo
             {
                 FileName = "python",
-                Arguments = $"\"{pythonFilePath}\"",
+                Arguments = $"\"{PythonFilePath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
+                StandardErrorEncoding = Encoding.UTF8,
+                EnvironmentVariables =
+                {
+                    ["PYTHONUTF8"] = "1"
+                }
             };
 
-            psi.EnvironmentVariables["PYTHONUTF8"] = "1";
-
-            activeProcess = new Process { StartInfo = psi };
-            activeProcess.Start();
+            _activeProcess = new Process { StartInfo = psi };
+            _activeProcess.Start();
 
             _ = Task.Run(async () =>
             {
@@ -68,10 +109,10 @@ public partial class BlockElement : UserControl
                 });
 
                 var buffer = new char[1];
-                var reader = activeProcess.StandardOutput;
+                var reader = _activeProcess.StandardOutput;
                 while (!reader.EndOfStream)
                 {
-                    int count = await reader.ReadAsync(buffer, 0, 1);
+                    var count = await reader.ReadAsync(buffer, 0, 1);
                     if (count > 0)
                     {
                         Dispatcher.Invoke(() => OutputText.Text += buffer[0]);
@@ -81,35 +122,33 @@ public partial class BlockElement : UserControl
 
             _ = Task.Run(async () =>
             {
-                string? line;
-                while ((line = await activeProcess.StandardError.ReadLineAsync()) != null)
+                while (await _activeProcess.StandardError.ReadLineAsync() is { } line)
                 {
                     if (line.Contains("No module named"))
                     {
-                        string? missingModule = ParseMissingModule(line);
-                        if (!string.IsNullOrEmpty(missingModule))
+                        var missingModule = ParseMissingModule(line);
+                        if (string.IsNullOrEmpty(missingModule)) continue;
+                        Dispatcher.Invoke(() => OutputText.Text += $"\n[AutoFix] Installing missing module: {missingModule}...\n");
+                        var installed = await InstallPythonPackage(missingModule);
+                        if (installed)
                         {
-                            Dispatcher.Invoke(() => OutputText.Text += $"\n[AutoFix] Installing missing module: {missingModule}...\n");
-                            bool installed = await InstallPythonPackage(missingModule);
-                            if (installed)
-                            {
-                                Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
-                                Dispatcher.Invoke(() => RunPythonScript());
-                            }
-                            else
-                            {
-                                Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Failed to install {missingModule}.\n");
-                            }
+                            Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
+                            Dispatcher.Invoke(RunPythonScript);
+                        }
+                        else
+                        {
+                            Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Failed to install {missingModule}.\n");
                         }
                     }
                     else
                     {
-                        Dispatcher.Invoke(() => OutputText.Text += "\n[Error] " + line);
+                        var line1 = line;
+                        Dispatcher.Invoke(() => OutputText.Text += "\n[Error] " + line1);
                     }
                 }
             });
 
-            activeProcess.Exited += (s, e) =>
+            _activeProcess.Exited += (s, e) =>
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -127,7 +166,7 @@ public partial class BlockElement : UserControl
     {
         try
         {
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 FileName = "python",
                 Arguments = $"-m pip install {package}",
@@ -138,14 +177,14 @@ public partial class BlockElement : UserControl
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8
             };
-            using Process process = new Process
-            {
-                StartInfo = psi
-            };
+            
+            using var process = new Process();
+            process.StartInfo = psi;
             process.Start();
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string error = await process.StandardError.ReadToEndAsync();
-            bool success = !error.Contains("ERROR", StringComparison.OrdinalIgnoreCase);
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            var success = !error.Contains("ERROR", StringComparison.OrdinalIgnoreCase);
+            
             return success;
         }
         catch
@@ -156,36 +195,38 @@ public partial class BlockElement : UserControl
 
     private static string? ParseMissingModule(string errorText)
     {
-        int start = errorText.IndexOf("No module named '");
+        var start = errorText.IndexOf("No module named '", StringComparison.Ordinal);
         if (start == -1)
             return null;
         start += "No module named '".Length;
 
-        int end = errorText.IndexOf("'", start);
-        if (end == -1)
-            return null;
-        return errorText[start..end];
+        var end = errorText.IndexOf('\'', start);
+        return end == -1 ? null : errorText[start..end];
     }
 
     private void StopActiveProcess()
     {
         try
         {
-            if (activeProcess != null && !activeProcess.HasExited)
-                activeProcess.Kill();
+            if (_activeProcess != null && !_activeProcess.HasExited)
+                _activeProcess.Kill();
         }
-        catch { }
+        catch
+        {
+            // ignored
+        }
     }
 
     #region top menu buttons
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         StopLoop();
-        OnRemove?.Invoke(this);
+        _onRemove?.Invoke(this);
     }
 
     private void EditButton_Click(object sender, RoutedEventArgs e)
     {
+        if (EditBlockButton.ContextMenu == null) return;
         EditBlockButton.ContextMenu.PlacementTarget = EditBlockButton;
         EditBlockButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         EditBlockButton.ContextMenu.IsOpen = true;
@@ -194,12 +235,10 @@ public partial class BlockElement : UserControl
     private void SelectPythonFile_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog { Filter = "Python files (*.py)|*.py|All files (*.*)|*.*" };
-        if (dlg.ShowDialog() == true)
-        {
-            pythonFilePath = dlg.FileName;
-            SetFileNameText();
-            RunPythonScript();
-        }
+        if (dlg.ShowDialog() != true) return;
+        PythonFilePath = dlg.FileName;
+        SetFileNameText();
+        RunPythonScript();
     }
 
     private void CopyButton_Click(object sender, RoutedEventArgs e)
@@ -210,19 +249,20 @@ public partial class BlockElement : UserControl
     #endregion
 
     #region loop button behaviour
-    public void ToggleLoop_Click(object sender, RoutedEventArgs e)
-    {
-        isLooping = !isLooping;
 
-        if (isLooping)
+    private void ToggleLoop_Click(object sender, RoutedEventArgs e)
+    {
+        IsLooping = !IsLooping;
+
+        if (IsLooping)
         {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString());
-            if (double.TryParse(input, out double sec) && sec > 0)
+            var input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString(CultureInfo.InvariantCulture));
+            if (double.TryParse(input, out var sec) && sec > 0)
                 LoopInterval = sec;
 
-            loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-            loopTimer.Tick += (s, _) => RunPythonScript();
-            loopTimer.Start();
+            _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
+            _loopTimer.Tick += (s, _) => RunPythonScript();
+            _loopTimer.Start();
         }
         else
         {
@@ -234,32 +274,32 @@ public partial class BlockElement : UserControl
 
     private void UpdateLoopStatus()
     {
-        if (isLooping)
-            OutputText.Text = $"Loop: ON | Interval: {LoopInterval}s | File: {Path.GetFileNameWithoutExtension(pythonFilePath)}";
+        if (IsLooping)
+            OutputText.Text = $"Loop: ON | Interval: {LoopInterval}s | File: {Path.GetFileNameWithoutExtension(PythonFilePath)}";
     }
 
     private void StopLoop()
     {
-        loopTimer?.Stop();
-        loopTimer = null;
+        _loopTimer?.Stop();
+        _loopTimer = null;
     }
     #endregion
 
     #region input things
     private void ToggleInput_Click(object sender, RoutedEventArgs e)
     {
-        isInputVisible = !isInputVisible;
-        UserInputBox.Visibility = isInputVisible ? Visibility.Visible : Visibility.Collapsed;
+        _isInputVisible = !_isInputVisible;
+        UserInputBox.Visibility = _isInputVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UserInputBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && activeProcess != null && !activeProcess.HasExited)
+        if (e.Key == Key.Enter && _activeProcess != null && !_activeProcess.HasExited)
         {
             string input = UserInputBox.Text.Trim();
             if (!string.IsNullOrEmpty(input))
             {
-                activeProcess.StandardInput.WriteLine(input);
+                _activeProcess.StandardInput.WriteLine(input);
                 OutputText.Text += $"\n>>> {input}\n";
                 UserInputBox.Clear();
             }
@@ -269,25 +309,25 @@ public partial class BlockElement : UserControl
 
     public void SetFileNameText()
     {
-        if (!string.IsNullOrEmpty(pythonFilePath))
-            FileNameText.Text = Path.GetFileNameWithoutExtension(pythonFilePath);
+        if (!string.IsNullOrEmpty(PythonFilePath))
+            FileNameText.Text = Path.GetFileNameWithoutExtension(PythonFilePath);
     }
 
     public void RestoreLoopState()
     {
-        if (isLooping)
+        if (IsLooping)
         {
-            if (!string.IsNullOrEmpty(pythonFilePath) && File.Exists(pythonFilePath))
+            if (!string.IsNullOrEmpty(PythonFilePath) && File.Exists(PythonFilePath))
             {
-                loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-                loopTimer.Tick += (s, _) => RunPythonScript();
-                loopTimer.Start();
+                _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
+                _loopTimer.Tick += (s, _) => RunPythonScript();
+                _loopTimer.Start();
 
                 UpdateLoopStatus();
             }
             else
             {
-                isLooping = false;
+                IsLooping = false;
             }
         }
         else
