@@ -13,50 +13,55 @@
             </Grid.RowDefinitions>
 
             <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.Row="0">
-                <DockPanel>
-                    <TextBlock x:Name="FileNameText"
-                               DockPanel.Dock="Left"
-                               Text=""
-                               VerticalAlignment="Center"
-                               Foreground="Lime"
-                               Margin="5,0,0,0"
-                               FontWeight="Bold" ToolTip=".py filename"/>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button x:Name="EditBlockButton"
-                                Content="Edit"
-                                Style="{StaticResource FlatButtonStyle}"
-                                Click="EditButton_Click">
-                            <Button.ContextMenu>
-                                <ContextMenu x:Name="EditMenu">
-                                    <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>
-                                    <Separator/>
-                                    <MenuItem Header="Delete block" Click="DeleteButton_Click"/>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
-                        <Button x:Name="CopyButton"
-                                Style="{StaticResource FlatImageButtonStyle}"
-                                Click="CopyButton_Click" Width="20" Height="20" ToolTip="Copy block output">
-                            <Button.Background>
-                                <ImageBrush ImageSource="/Resource/Icons/copy.png"/>
-                            </Button.Background>
-                        </Button>
-                        <Button x:Name="LoopToggleButton"
-                                Style="{StaticResource FlatImageButtonStyle}"
-                                Click="ToggleLoop_Click" Width="20" Height="20" ToolTip="Loop settings">
-                            <Button.Background>
-                                <ImageBrush ImageSource="/Resource/Icons/loop.png"/>
-                            </Button.Background>
-                        </Button>
-                        <Button x:Name="InputToggleButton"
-                                Style="{StaticResource FlatImageButtonStyle}"
-                                Click="ToggleInput_Click" Width="20" Height="20" ToolTip="Input field">
-                            <Button.Background>
-                                <ImageBrush ImageSource="/Resource/Icons/input.png"/>
-                            </Button.Background>
-                        </Button>
-                    </StackPanel>
-                </DockPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Grid HorizontalAlignment="Left">
+
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <TextBlock x:Name="FileNameText"
+                                       DockPanel.Dock="Left"
+                                       Text=""
+                                       VerticalAlignment="Center"
+                                       Foreground="Lime"
+                                       Margin="5,0,0,0"
+                                       FontWeight="Bold" ToolTip=".py filename"/>
+                            <Button x:Name="EditBlockButton"
+                                    Content="Edit"
+                                    Style="{StaticResource FlatButtonStyle}"
+                                    Click="EditButton_Click">
+                                <Button.ContextMenu>
+                                    <ContextMenu x:Name="EditMenu">
+                                        <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="Delete block" Click="DeleteButton_Click"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                            <Button x:Name="CopyButton"
+                                    Style="{StaticResource FlatImageButtonStyle}"
+                                    Click="CopyButton_Click" Width="20" Height="20" ToolTip="Copy block output">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="/Resource/Icons/copy.png"/>
+                                </Button.Background>
+                            </Button>
+                            <Button x:Name="LoopToggleButton"
+                                    Style="{StaticResource FlatImageButtonStyle}"
+                                    Click="ToggleLoop_Click" Width="20" Height="20" ToolTip="Loop settings">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="/Resource/Icons/loop.png"/>
+                                </Button.Background>
+                            </Button>
+                            <Button x:Name="InputToggleButton"
+                                    Style="{StaticResource FlatImageButtonStyle}"
+                                    Click="ToggleInput_Click" Width="20" Height="20" ToolTip="Input field">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="/Resource/Icons/input.png"/>
+                                </Button.Background>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Button Style="{StaticResource FlatButtonStyle}" Content="RERUN" FontStyle="Italic" Click="Rerun_Click"/>
+                </StackPanel>
+                
             </Border>
 
             <Grid Grid.Row="1">
@@ -65,7 +70,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto">
                     <TextBlock x:Name="OutputText"
                                TextWrapping="Wrap"
                                Foreground="White"

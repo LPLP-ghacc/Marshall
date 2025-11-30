@@ -88,6 +88,14 @@
     <Content Include="Resource\Background\1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Remove="Resource\Icons\funnyIcon.png" />
+    <Content Include="Resource\Icons\funnyIcon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resource\Icons\funnyIcon.jpg" />
   </ItemGroup>
 
 </Project>

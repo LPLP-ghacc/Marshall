@@ -1,27 +1,24 @@
-﻿// 悲しいという気持ち - Yuyoyuppe
-
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace MarshallApp;
 
-public partial class BlockElement : UserControl
+public partial class BlockElement
 {
     private readonly Action<BlockElement>? _onRemove;
     public string? PythonFilePath;
-    public bool IsLooping = false;
+    public bool IsLooping;
     public double LoopInterval { get; set; } = 5.0;
     private DispatcherTimer? _loopTimer;
     private Process? _activeProcess;
-    private bool _isInputVisible = false;
+    private bool _isInputVisible;
 
     public BlockElement(Action<BlockElement>? onRemove)
     {
@@ -53,20 +50,15 @@ public partial class BlockElement : UserControl
         }
     }
     
-    private static void OpenPythonDownloadPage()
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://www.python.org/downloads/",
-            UseShellExecute = true
-        });
-    }
-
     public void RunPythonScript()
     {
         if (!IsPythonInstalled())
         {
-            OpenPythonDownloadPage();
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://www.python.org/downloads/",
+                UseShellExecute = true
+            });
         }
         
         if (string.IsNullOrEmpty(PythonFilePath) || !File.Exists(PythonFilePath))
@@ -101,22 +93,25 @@ public partial class BlockElement : UserControl
             _activeProcess = new Process { StartInfo = psi };
             _activeProcess.Start();
 
+
+            var hasNewOutputStarted = false;
             _ = Task.Run(async () =>
             {
-                Dispatcher.Invoke(() =>
+                while (!_activeProcess.HasExited && await _activeProcess.StandardOutput.ReadLineAsync() is { } line)
                 {
-                    OutputText.Text = string.Empty;
-                });
+                    var capturedLine = line;
 
-                var buffer = new char[1];
-                var reader = _activeProcess.StandardOutput;
-                while (!reader.EndOfStream)
-                {
-                    var count = await reader.ReadAsync(buffer, 0, 1);
-                    if (count > 0)
+                    Dispatcher.Invoke(() =>
                     {
-                        Dispatcher.Invoke(() => OutputText.Text += buffer[0]);
-                    }
+                        if (!hasNewOutputStarted)
+                        {
+                            hasNewOutputStarted = true;
+                            OutputText.Text = string.Empty;
+                        }
+
+                        OutputText.Text += capturedLine + "\n";
+                        Scroll.ScrollToEnd();
+                    });
                 }
             });
 
@@ -148,12 +143,12 @@ public partial class BlockElement : UserControl
                 }
             });
 
-            _activeProcess.Exited += (s, e) =>
+            _activeProcess.Exited += (_, _) =>
             {
-                Dispatcher.Invoke(() =>
+                if (!hasNewOutputStarted && !IsLooping)
                 {
-                    OutputText.Text = string.Empty;
-                });
+                    //OutputText.Text += "\n[Готово] Скрипт завершился без вывода OWO";
+                }
             };
         }
         catch (Exception ex)
@@ -175,7 +170,8 @@ public partial class BlockElement : UserControl
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
+                StandardErrorEncoding = Encoding.UTF8,
+                StandardInputEncoding = Encoding.UTF8,
             };
             
             using var process = new Process();
@@ -208,7 +204,7 @@ public partial class BlockElement : UserControl
     {
         try
         {
-            if (_activeProcess != null && !_activeProcess.HasExited)
+            if (_activeProcess is { HasExited: false })
                 _activeProcess.Kill();
         }
         catch
@@ -261,7 +257,7 @@ public partial class BlockElement : UserControl
                 LoopInterval = sec;
 
             _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-            _loopTimer.Tick += (s, _) => RunPythonScript();
+            _loopTimer.Tick += (_, _) => RunPythonScript();
             _loopTimer.Start();
         }
         else
@@ -294,16 +290,17 @@ public partial class BlockElement : UserControl
 
     private void UserInputBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && _activeProcess != null && !_activeProcess.HasExited)
-        {
-            string input = UserInputBox.Text.Trim();
-            if (!string.IsNullOrEmpty(input))
-            {
-                _activeProcess.StandardInput.WriteLine(input);
-                OutputText.Text += $"\n>>> {input}\n";
-                UserInputBox.Clear();
-            }
-        }
+        if (e.Key != Key.Enter || _activeProcess == null || _activeProcess.HasExited) return;
+
+        var input = UserInputBox.Text.Trim();
+        if (string.IsNullOrEmpty(input)) return;
+
+        var utf8Bytes = Encoding.UTF8.GetBytes(input + "\n");
+        _activeProcess.StandardInput.BaseStream.Write(utf8Bytes, 0, utf8Bytes.Length);
+        _activeProcess.StandardInput.BaseStream.Flush();
+
+        OutputText.Text += $"\n>>> {input}\n";
+        UserInputBox.Clear();
     }
     #endregion
 
@@ -320,7 +317,7 @@ public partial class BlockElement : UserControl
             if (!string.IsNullOrEmpty(PythonFilePath) && File.Exists(PythonFilePath))
             {
                 _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-                _loopTimer.Tick += (s, _) => RunPythonScript();
+                _loopTimer.Tick += (_, _) => RunPythonScript();
                 _loopTimer.Start();
 
                 UpdateLoopStatus();
@@ -334,5 +331,10 @@ public partial class BlockElement : UserControl
         {
             UpdateLoopStatus();
         }
+    }
+
+    private void Rerun_Click(object sender, RoutedEventArgs e)
+    {
+        RunPythonScript();
     }
 }

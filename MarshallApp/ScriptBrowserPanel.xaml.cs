@@ -10,55 +10,56 @@ public partial class ScriptBrowserPanel : UserControl
     public event Action<string>? ScriptSelected;
     public event Action<string>? ScriptOpenInNewPanel;
 
-    private readonly string scriptsFolder = "Scripts";
+    private const string ScriptsFolder = "Scripts";
 
     public ScriptBrowserPanel()
     {
         InitializeComponent();
-        Directory.CreateDirectory(scriptsFolder);
+        Directory.CreateDirectory(ScriptsFolder);
         LoadScripts();
     }
 
     private void LoadScripts()
     {
         ScriptList.Items.Clear();
-        var files = Directory.GetFiles(scriptsFolder, "*.py");
+        var files = Directory.GetFiles(ScriptsFolder, "*.py");
 
         foreach (var file in files)
         {
-            string fileName = Path.GetFileName(file);
-            string fileNameNoExt = Path.GetFileNameWithoutExtension(file);
-
+            var fileNameNoExt = Path.GetFileNameWithoutExtension(file);
+            
             var button = new Button
             {
                 Content = fileNameNoExt,
                 Tag = file,
                 Margin = new Thickness(0),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                VerticalContentAlignment = VerticalAlignment.Center,
+                Height = 30,
+                Width = 150,
+                HorizontalContentAlignment =  HorizontalAlignment.Center,
+                HorizontalAlignment =  HorizontalAlignment.Center,
                 Padding = new Thickness(6, 3, 6, 3),
-                Style = (Style)Application.Current.FindResource("FlatButtonStyle")
+                Style = (Style?)Application.Current.FindResource("FlatButtonStyle")
             };
 
             var contextMenu = new ContextMenu
             {
-                Style = (Style)Application.Current.FindResource("DarkContextMenuStyle")
+                Style = (Style?)Application.Current.FindResource("DarkContextMenuStyle")
             };
 
             var openPanelItem = new MenuItem
             {
                 Header = "Run in new panel",
-                Style = (Style)Application.Current.FindResource("DarkMenuItemStyle")
+                Style = (Style?)Application.Current.FindResource("DarkMenuItemStyle")
             };
-            openPanelItem.Click += (s, e) => ScriptOpenInNewPanel?.Invoke(file);
+            openPanelItem.Click += (_, _) => ScriptOpenInNewPanel?.Invoke(file);
 
             var openFolderItem = new MenuItem
             {
                 Header = "Open file location",
-                Style = (Style)Application.Current.FindResource("DarkMenuItemStyle")
+                Style = (Style?)Application.Current.FindResource("DarkMenuItemStyle")
             };
-            openFolderItem.Click += (s, e) =>
+            
+            openFolderItem.Click += (_, _) =>
             {
                 if (File.Exists(file))
                     Process.Start("explorer.exe", $"/select,\"{file}\"");
@@ -70,13 +71,18 @@ public partial class ScriptBrowserPanel : UserControl
 
             button.ContextMenu = contextMenu;
 
-            button.Click += (s, e) => ScriptSelected?.Invoke(file);
+            button.Click += (_, _) => ScriptSelected?.Invoke(file);
 
             ScriptList.Items.Add(button);
         }
     }
 
-    private void ScriptList_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (ScriptList.SelectedItem is string fileName) { string fullPath = Path.Combine(scriptsFolder, fileName); ScriptSelected?.Invoke(fullPath); } }
+    private void ScriptList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ScriptList.SelectedItem is not string fileName) return;
+        var fullPath = Path.Combine(ScriptsFolder, fileName); 
+        ScriptSelected?.Invoke(fullPath);
+    }
 
     public void RefreshScripts() => LoadScripts();
 }

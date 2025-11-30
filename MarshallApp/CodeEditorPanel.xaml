@@ -30,6 +30,8 @@
                            Background="#1E1E1E"
                            Foreground="#D4D4D4"
                            ShowLineNumbers="True"
+                           ScrollViewer.VerticalScrollBarVisibility="Auto"
+                           ScrollViewer.HorizontalScrollBarVisibility="Auto"
                            >
             
         </avalon:TextEditor>

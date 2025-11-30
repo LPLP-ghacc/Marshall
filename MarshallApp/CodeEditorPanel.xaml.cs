@@ -7,25 +7,25 @@ namespace MarshallApp;
 
 public partial class CodeEditorPanel : UserControl
 {
-    private string? currentFilePath;
-    private readonly string scriptsFolder = "Scripts";
+    private string? _currentFilePath;
+    private const string ScriptsFolder = "Scripts";
 
     public CodeEditorPanel()
     {
         InitializeComponent();
-        Directory.CreateDirectory(scriptsFolder);
+        Directory.CreateDirectory(ScriptsFolder);
     }
 
     public void LoadScript(string filePath)
     {
-        currentFilePath = filePath;
+        _currentFilePath = filePath;
         FileNameText.Text = Path.GetFileName(filePath);
         Editor.Text = File.ReadAllText(filePath);
     }
 
     public void NewScript()
     {
-        currentFilePath = null;
+        _currentFilePath = null;
         FileNameText.Text = "new_script.py";
         Editor.Clear();
     }
@@ -53,7 +53,7 @@ public partial class CodeEditorPanel : UserControl
 
         var dlg = new Microsoft.Win32.OpenFileDialog
         {
-            InitialDirectory = Path.GetFullPath(scriptsFolder),
+            InitialDirectory = Path.GetFullPath(ScriptsFolder),
             Filter = "Python files (*.py)|*.py|All files (*.*)|*.*"
         };
 
@@ -65,24 +65,24 @@ public partial class CodeEditorPanel : UserControl
     {
         string code = Editor.Text;
 
-        if(currentFilePath == null || saveAs)
+        if(_currentFilePath == null || saveAs)
         {
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                InitialDirectory = Path.GetFullPath(scriptsFolder),
+                InitialDirectory = Path.GetFullPath(ScriptsFolder),
                 Filter = "Python files (*.py)|*.py",
                 FileName = FileNameText.Text
             };
             if(dlg.ShowDialog() == true)
             {
-                currentFilePath = dlg.FileName;
-                FileNameText.Text = Path.GetFileName(currentFilePath);
+                _currentFilePath = dlg.FileName;
+                FileNameText.Text = Path.GetFileName(_currentFilePath);
             }
             else return;
         }
 
-        File.WriteAllText(currentFilePath, code);
-        MessageBox.Show($"Saved: {Path.GetFileName(currentFilePath)}",
+        File.WriteAllText(_currentFilePath, code);
+        MessageBox.Show($"Saved: {Path.GetFileName(_currentFilePath)}",
                         "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
         (FindParent<MainWindow>()?.ScriptBrowser)?.RefreshScripts();
@@ -90,20 +90,26 @@ public partial class CodeEditorPanel : UserControl
 
     private bool ConfirmUnsavedChanges()
     {
-        if(!string.IsNullOrWhiteSpace(Editor.Text))
-        {
-            var result = MessageBox.Show("Save changes before continuing?",
-                "Confirm", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        if (string.IsNullOrWhiteSpace(Editor.Text)) return true;
+        var result = MessageBox.Show("Save changes before continuing?",
+            "Confirm", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 
-            if(result == MessageBoxResult.Cancel) return false;
-            if(result == MessageBoxResult.Yes) SaveScript(false);
+        switch (result)
+        {
+            case MessageBoxResult.Cancel:
+                return false;
+            case MessageBoxResult.Yes:
+                SaveScript(false);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
         return true;
     }
 
     private T? FindParent<T>() where T : DependencyObject
     {
-        DependencyObject parent = this;
+        DependencyObject? parent = this;
         while(parent != null && parent is not T)
             parent = VisualTreeHelper.GetParent(parent);
         return parent as T;

@@ -129,6 +129,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         AddButton.ContextMenu.IsOpen = true;
     }
+    
+    private void HelpButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (HelpButton.ContextMenu == null) return;
+        HelpButton.ContextMenu.PlacementTarget = AddButton;
+        HelpButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        HelpButton.ContextMenu.IsOpen = true;
+    }
 
     private void WindowButton_Click(object sender, RoutedEventArgs e)
     {
@@ -281,5 +289,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         SaveAppConfig();
         Environment.Exit(0);
+    }
+
+    private void AboutMarshall_Click(object sender, RoutedEventArgs e)
+    {
+        if(About.Instance != null) return;
+        
+        var aboutWindow = new About();
+        aboutWindow.Show();
     }
 }
