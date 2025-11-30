@@ -21,7 +21,8 @@ Windows 10/11
 .NET 7.0
 Python 3.8+
 Rights to install packages via pip
-<img width="1543" height="647" alt="image" src="https://github.com/user-attachments/assets/c50fe067-73db-4989-afc8-5143c0aa1d90" />
+<img width="1663" height="778" alt="изображение" src="https://github.com/user-attachments/assets/9aea1c9f-ce0a-45f7-8946-29b85c6987b2" />
+
 
 
 
