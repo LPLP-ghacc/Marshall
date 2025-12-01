@@ -23,3 +23,6 @@
 - **Framework**: .NET 8.0 Runtime
 - **Python**: 3.8+ (must be in PATH)
 - **Permissions**: Administrative rights for `pip` package installations (for auto-module fixes)
+
+  
+<img width="500" height="500" alt="Icon" src="https://github.com/user-attachments/assets/efe29f1c-7319-49d0-8afd-36bd89cf239e" />
