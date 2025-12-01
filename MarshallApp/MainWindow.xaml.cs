@@ -106,9 +106,9 @@ public partial class MainWindow : INotifyPropertyChanged
         SaveAppConfig();
     }
 
-    private void ScriptBrowser_ScriptSelected(string filePath)
+    private void ScriptBrowser_ScriptSelected(string? filePath)
     {
-        CodeEditor.LoadScript(filePath);
+        if (filePath != null) CodeEditor.LoadScript(filePath);
         CodeEditor.Visibility = Visibility.Visible;
     }
     #endregion
