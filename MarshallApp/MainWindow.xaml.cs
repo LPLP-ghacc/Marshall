@@ -18,16 +18,22 @@ public partial class MainWindow : INotifyPropertyChanged
     private readonly List<BlockElement> _blocks = [];
     private WallpaperController? _wallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public void OnPropertyChanged([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
+        
+        MStackPanel.AllowDrop = true;
+        MStackPanel.DragOver += MStackPanel_DragOver;
+        MStackPanel.Drop += MStackPanel_Drop;
 
         WallpaperControlInit();
 
-
-        PrimWindow.MouseDown += (_, e) =>
+        Top.MouseDown += (_, e) =>
         {
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
@@ -44,20 +50,6 @@ public partial class MainWindow : INotifyPropertyChanged
         LoadPanelState();
         LoadAllConfigs();
         NewScript();
-    }
-
-    private void WallpaperControlInit()
-    {
-        var imagesSource = Path.Combine(Environment.CurrentDirectory + "/Resource/Background");
-        _wallControl = new WallpaperController(RootImageBrush, imagesSource);
-        _wallControl.Update();
-        
-        _wallpaperTimer.Interval = TimeSpan.FromSeconds(30);
-        _wallpaperTimer.Tick += (_, _) =>
-        {
-            _wallControl.Update();
-        };
-        _wallpaperTimer.Start();
     }
 
     private void NewScript()
@@ -158,7 +150,11 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Настройки скоро будут здесь...");
+        return;
+        if (Settings.Instanse != null) return;
+        
+        var settings = new Settings();
+        settings.Show();
     }
 
     private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
@@ -254,18 +250,16 @@ public partial class MainWindow : INotifyPropertyChanged
 
         _isRestoring = false;
     }
-
-    #endregion
-
+    
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
         SaveAppConfig();
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-    public void OnPropertyChanged([CallerMemberName] string? name = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    #endregion
+
+    #region Toolbar buttons
 
     private void Fullscreen_Click(object sender, RoutedEventArgs e)
     {
@@ -297,5 +291,92 @@ public partial class MainWindow : INotifyPropertyChanged
         
         var aboutWindow = new About();
         aboutWindow.Show();
+    }
+
+    #endregion
+
+    #region DragDropBlockElement
+
+    private static void MStackPanel_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(BlockElement)) ? DragDropEffects.Move : DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void MStackPanel_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(typeof(BlockElement))) return;
+
+        var dragged = (BlockElement?)e.Data.GetData(typeof(BlockElement));
+
+        var mousePos = e.GetPosition(MStackPanel);
+
+        var insertIndex = GetInsertIndex(mousePos);
+
+        if (dragged != null) MoveBlockElement(dragged, insertIndex);
+
+        UpdateLayoutGrid();
+
+        SaveAppConfig();
+    }
+    
+    private int GetInsertIndex(Point mousePos)
+    {
+        var bestIndex = 0;
+        var bestDistance = double.MaxValue;
+
+        for (var i = 0; i < MStackPanel.Children.Count; i++)
+        {
+            var child = MStackPanel.Children[i];
+            var transform = child.TransformToAncestor(MStackPanel);
+            var rect = transform.TransformBounds(new Rect(0, 0, child.RenderSize.Width, child.RenderSize.Height));
+
+            var centerY = rect.Top + rect.Height / 2;
+            var centerX = rect.Left + rect.Width / 2;
+
+            var dx = mousePos.X - centerX;
+            var dy = mousePos.Y - centerY;
+            var dist = dx * dx + dy * dy;
+
+            if (!(dist < bestDistance)) continue;
+            bestDistance = dist;
+            bestIndex = i;
+        }
+
+        return bestIndex;
+    }
+    
+    private void MoveBlockElement(BlockElement element, int newIndex)
+    {
+        var oldIndex = MStackPanel.Children.IndexOf(element);
+        if (oldIndex == -1) return;
+
+        if (newIndex == oldIndex) return;
+
+        MStackPanel.Children.RemoveAt(oldIndex);
+        _blocks.RemoveAt(oldIndex);
+
+        if (newIndex > MStackPanel.Children.Count)
+            newIndex = MStackPanel.Children.Count;
+
+        MStackPanel.Children.Insert(newIndex, element);
+        _blocks.Insert(newIndex, element);
+    }
+
+    #endregion
+
+    private void WallpaperControlInit()
+    {
+        var imagesSource = Path.Combine(Environment.CurrentDirectory + "/Resource/Background");
+        _wallControl = new WallpaperController(RootImageBrush, imagesSource);
+        _wallControl.Update();
+        
+        _wallpaperTimer.Interval = TimeSpan.FromSeconds(30);
+        _wallpaperTimer.Tick += (_, _) =>
+        {
+            _wallControl.Update();
+        };
+        _wallpaperTimer.Start();
     }
 }

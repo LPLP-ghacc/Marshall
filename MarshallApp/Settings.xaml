@@ -1,12 +1,89 @@
 ﻿<Window x:Class="MarshallApp.Settings"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:MarshallApp"
-        mc:Ignorable="d"
-        Title="Settings" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        Title="Settings ⚙️" Height="680" Width="720"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False">
+    
+    <Border Background="#2b2b2b" CornerRadius="16" BorderBrush="#444" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Background="#1e1e1e" CornerRadius="16,16,0,0" MouseLeftButtonDown="TopBar_MouseDown">
+                <Grid>
+                    <TextBlock Text="⚙️ Settings" Foreground="White" FontSize="16" FontWeight="Bold"
+                               VerticalAlignment="Center" Margin="16,0"/>
+                    <Button Content="✕" Width="40" Height="40" HorizontalAlignment="Right"
+                            Style="{StaticResource FlatButtonStyle}" Click="Close_Click"
+                            Foreground="White" FontSize="18"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="20">
+
+                    <GroupBox Header="📁 Scripts Folder" Foreground="White" Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ScriptsFolder}" Margin="5" Foreground="White"/>
+                            <Button Content="Изменить папку..." Click="SelectScriptsFolder_Click" Width="150" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="⛓ Resource Limits" Foreground="White" Margin="0,0,0,15">
+                        <StackPanel >
+                            <CheckBox Content="Ограничивать CPU и RAM для скриптов" IsChecked="{Binding LimitResources}" Foreground="White"/>
+                            <StackPanel IsEnabled="{Binding LimitResources}">
+                                <Slider Minimum="5" Maximum="100" Value="{Binding MaxCpuPercentage}" Width="300"/>
+                                <TextBlock Text="{Binding MaxCpuPercentage, StringFormat=CPU: {0}%}" Foreground="#a0a0a0" HorizontalAlignment="Center"/>
+                                <Slider Minimum="64" Maximum="4096" Value="{Binding MaxMemoryMb}" Width="300"/>
+                                <TextBlock Text="{Binding MaxMemoryMb, StringFormat=RAM: {0} MB}" Foreground="#a0a0a0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="🚀 Startup Tray" Foreground="White" Margin="0,0,0,15">
+                        <StackPanel >
+                            <CheckBox Content="Запускать с Windows" IsChecked="{Binding StartWithWindows}" Foreground="White"/>
+                            <CheckBox Content="Показывать иконку в трее" IsChecked="{Binding ShowTrayIcon}" Foreground="White"/>
+                            <CheckBox Content="Сворачивать в трей вместо закрытия" IsChecked="{Binding MinimizeToTray}" Foreground="White"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="🈶 Output Font" Foreground="White" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox Width="150" SelectedItem="{Binding OutputFontFamily}">
+                                <ComboBoxItem>Consolas</ComboBoxItem>
+                                <ComboBoxItem>Segoe UI</ComboBoxItem>
+                                <ComboBoxItem>Cascadia Code</ComboBoxItem>
+                                <ComboBoxItem>Fira Code</ComboBoxItem>
+                            </ComboBox>
+                            <Slider Minimum="10" Maximum="24" Value="{Binding OutputFontSize}" Width="150"/>
+                            <TextBlock Text="{Binding OutputFontSize, StringFormat={}{0}px}" VerticalAlignment="Center" Foreground="White"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="✨ Extra" Foreground="White" Margin="0,0,0,15">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Макс. строк в выводе:" VerticalAlignment="Center" Foreground="White"/>
+                                <TextBox Text="{Binding MaxOutputLines}" Width="80" Margin="10,0"/>
+                            </StackPanel>
+                            <CheckBox Content="Звук при ошибке" IsChecked="{Binding PlayErrorSound}" Foreground="White"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Прозрачность окна:" VerticalAlignment="Center" Foreground="White"/>
+                                <Slider Minimum="0.5" Maximum="1" Value="{Binding WindowOpacity}" Width="150"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <Button Content="Сохранить и закрыть" Click="SaveAndClose_Click" Style="{StaticResource FlatButtonStyle}"
+                            Foreground="White" FontWeight="Bold" Height="40"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
 </Window>

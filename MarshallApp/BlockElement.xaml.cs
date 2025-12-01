@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Management;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
@@ -15,72 +14,24 @@ public partial class BlockElement
 {
     private readonly string _iconsPath;
     private CancellationTokenSource? _cts;
-    private readonly Action<BlockElement>? _onRemove;
+    private readonly Action<BlockElement>? _removeCallback;
     public string? PythonFilePath;
     public bool IsLooping;
     public double LoopInterval { get; set; } = 5.0;
     private DispatcherTimer? _loopTimer;
     private Process? _activeProcess;
     private bool _isInputVisible;
-    
-    // --- JOB OBJECT KILL TREE ---
-    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-    private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+    private Point _dragStart;
+    private bool _isDragging;
 
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
-    private static extern bool SetInformationJobObject(IntPtr hJob, int JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
-
-    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
-
-    private IntPtr _jobHandle;
-
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct JOBOBJECT_BASIC_LIMIT_INFORMATION
-    {
-        public long PerProcessUserTimeLimit;
-        public long PerJobUserTimeLimit;
-        public int LimitFlags;
-        public UIntPtr MinimumWorkingSetSize;
-        public UIntPtr MaximumWorkingSetSize;
-        public int ActiveProcessLimit;
-        public long Affinity;
-        public int PriorityClass;
-        public int SchedulingClass;
-    }
-
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct IO_COUNTERS
-    {
-        public ulong ReadOperationCount;
-        public ulong WriteOperationCount;
-        public ulong OtherOperationCount;
-        public ulong ReadTransferCount;
-        public ulong WriteTransferCount;
-        public ulong OtherTransferCount;
-    }
-
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
-    {
-        public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
-        public IO_COUNTERS IoInfo;
-        public UIntPtr ProcessMemoryLimit;
-        public UIntPtr JobMemoryLimit;
-        public UIntPtr PeakProcessMemoryUsed;
-        public UIntPtr PeakJobMemoryUsed;
-    }
-
-    private const int JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9;
-    private const int JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
-    
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
-    private static extern bool CloseHandle(IntPtr hObject);
-
-    public BlockElement(Action<BlockElement>? onRemove)
+    public BlockElement(Action<BlockElement>? removeCallback)
     {
         InitializeComponent();
-        _onRemove = onRemove;
+        
+        this.PreviewMouseMove += Block_PreviewMouseMove;
+        this.PreviewMouseLeftButtonDown += Block_PreviewMouseLeftButtonDown;
+        
+        _removeCallback = removeCallback;
         _iconsPath = Path.Combine(Environment.CurrentDirectory + "/Resource/Icons/");
         UpdateLoopIcon(IsLooping);
         
@@ -101,14 +52,7 @@ public partial class BlockElement
             return;
         }
         
-        if (!IsPythonInstalled())
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://www.python.org/downloads/",
-                UseShellExecute = true
-            });
-        }
+        OpenPythonInstallerPage();
 
         SetFileNameText();
 
@@ -137,79 +81,19 @@ public partial class BlockElement
             _activeProcess.Start();
             
             // Create JobObject if not created yet
-            if (_jobHandle == IntPtr.Zero)
-            {
-                _jobHandle = CreateJobObject(IntPtr.Zero, null);
-
-                var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
-                info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-
-                SetInformationJobObject(
-                    _jobHandle,
-                    JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
-                    ref info,
-                    System.Runtime.InteropServices.Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()
-                );
-            }
+            CreateJobObject();
             
             AssignProcessToJobObject(_jobHandle, _activeProcess.Handle);
             
-            var hasNewOutputStarted = false;
-            _ = Task.Run(async () =>
-            {
-                while (!token.IsCancellationRequested && 
-                       !_activeProcess.HasExited && 
-                       await _activeProcess.StandardOutput.ReadLineAsync(token) is { } line)
-                {
-                    var capturedLine = line;
+            var hasNewOutputStarted = HasNewOutputStarted(token);
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (!hasNewOutputStarted)
-                        {
-                            hasNewOutputStarted = true;
-                            OutputText.Text = string.Empty;
-                        }
-
-                        OutputText.Text += capturedLine + "\n";
-                        Scroll.ScrollToEnd();
-                    });
-                }
-            }, token);
-
-            _ = Task.Run(async () =>
-            {
-                while (await _activeProcess.StandardError.ReadLineAsync(token) is { } line)
-                {
-                    if (line.Contains("No module named"))
-                    {
-                        var missingModule = ParseMissingModule(line);
-                        if (string.IsNullOrEmpty(missingModule)) continue;
-                        Dispatcher.Invoke(() => OutputText.Text += $"\n[AutoFix] Installing missing module: {missingModule}...\n");
-                        var installed = await InstallPythonPackage(missingModule);
-                        if (installed)
-                        {
-                            Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
-                            Dispatcher.Invoke(RunPythonScript);
-                        }
-                        else
-                        {
-                            Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Failed to install {missingModule}.\n");
-                        }
-                    }
-                    else
-                    {
-                        var line1 = line;
-                        Dispatcher.Invoke(() => OutputText.Text += "\n[Error] " + line1);
-                    }
-                }
-            }, token);
+            AutoModuleInstaller(token);
 
             _activeProcess.Exited += (_, _) =>
             {
                 if (!hasNewOutputStarted && !IsLooping)
                 {
-                    //OutputText.Text += "\n[Готово] Скрипт завершился без вывода OWO";
+
                 }
             };
         }
@@ -219,7 +103,95 @@ public partial class BlockElement
         }
     }
 
-    private static async Task<bool> InstallPythonPackage(string package)
+    private static void OpenPythonInstallerPage()
+    {
+        if (!IsPythonInstalled())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://www.python.org/downloads/",
+                UseShellExecute = true
+            });
+        }
+    }
+
+    private void AutoModuleInstaller(CancellationToken token)
+    {
+        _ = Task.Run(async () =>
+        {
+            while (_activeProcess != null && await _activeProcess.StandardError.ReadLineAsync(token) is { } line)
+            {
+                if (line.Contains("No module named"))
+                {
+                    var missingModule = ParseMissingModule(line);
+                    if (string.IsNullOrEmpty(missingModule)) continue;
+                    Dispatcher.Invoke(() => OutputText.Text += $"\n[AutoFix] Installing missing module: {missingModule}...\n");
+                    var installed = await InstallPythonPackage(missingModule);
+                    if (installed)
+                    {
+                        Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
+                        Dispatcher.Invoke(RunPythonScript);
+                    }
+                    else
+                    {
+                        Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Failed to install {missingModule}.\n");
+                    }
+                }
+                else
+                {
+                    var line1 = line;
+                    Dispatcher.Invoke(() => OutputText.Text += "\n[Error] " + line1);
+                }
+            }
+        }, token);
+    }
+
+    private bool HasNewOutputStarted(CancellationToken token)
+    {
+        var hasNewOutputStarted = false;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested &&
+                   _activeProcess is { HasExited: false } && 
+                   await _activeProcess.StandardOutput.ReadLineAsync(token) is { } line)
+            {
+                var capturedLine = line;
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (!hasNewOutputStarted)
+                    {
+                        hasNewOutputStarted = true;
+                        OutputText.Text = string.Empty;
+                    }
+
+                    OutputText.Text += capturedLine + "\n";
+                    Scroll.ScrollToEnd();
+                });
+            }
+        }, token);
+        return hasNewOutputStarted;
+    }
+
+    private void CreateJobObject()
+    {
+        if (_jobHandle != IntPtr.Zero) return;
+        _jobHandle = CreateJobObject(IntPtr.Zero, null);
+
+        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+
+        SetInformationJobObject(
+            _jobHandle,
+            JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+            ref info,
+            System.Runtime.InteropServices.Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()
+        );
+    }
+
+    #region Python things
+
+        private static async Task<bool> InstallPythonPackage(string package)
     {
         try
         {
@@ -319,6 +291,11 @@ public partial class BlockElement
             _activeProcess = null;
         }
         
+        LastHope();
+    }
+
+    private static void LastHope()
+    {
         try
         {
             var currentProcess = Process.GetCurrentProcess();
@@ -333,24 +310,15 @@ public partial class BlockElement
                     proc.Kill();
                     proc.WaitForExit(2000);
                 }
-                catch
-                {
-                    // ignored
-                }
-                finally
-                {
-                    proc.Dispose();
-                }
+                catch { /* ignored */ }
+                finally { proc.Dispose(); }
             }
 
             foreach (var proc in Process.GetProcessesByName("pythonw"))
             {
                 if (proc.SessionId != currentSessionId) continue;
                 try { if (!proc.HasExited) proc.Kill(); }
-                catch
-                {
-                    // ignored
-                }
+                catch { /* ignored */ }
                 finally { proc.Dispose(); }
             }
         }
@@ -360,11 +328,13 @@ public partial class BlockElement
         }
     }
 
+    #endregion
+    
     #region top menu buttons
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         StopLoop();
-        _onRemove?.Invoke(this);
+        _removeCallback?.Invoke(this);
     }
 
     private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -384,10 +354,7 @@ public partial class BlockElement
         RunPythonScript();
     }
 
-    private void CopyButton_Click(object sender, RoutedEventArgs e)
-    {
-        Clipboard.SetText(OutputText.Text);
-    }
+    private void CopyButton_Click(object sender, RoutedEventArgs e) => Clipboard.SetText(OutputText.Text);
 
     #endregion
 
@@ -396,7 +363,7 @@ public partial class BlockElement
     private void ToggleLoop_Click(object sender, RoutedEventArgs e)
     {
         IsLooping = !IsLooping;
-
+        
         if (IsLooping)
         {
             var input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString(CultureInfo.InvariantCulture));
@@ -414,7 +381,8 @@ public partial class BlockElement
             StopLoop();
             UpdateLoopIcon(false); 
         }
-
+        
+        UpdatePeriodTimeTextBlock();
         UpdateLoopStatus();
     }
     private void UpdateLoopIcon(bool isLooping)
@@ -445,6 +413,14 @@ public partial class BlockElement
         _loopTimer?.Stop();
         _loopTimer = null;
     }
+
+    private void UpdatePeriodTimeTextBlock()
+    {
+        var value = IsLooping ? LoopInterval.ToString(CultureInfo.InvariantCulture) : string.Empty;
+        
+        PeriodTime.Text = value;
+    } 
+    
     #endregion
 
     #region input things
@@ -476,7 +452,68 @@ public partial class BlockElement
         UserInputBox.Clear();
     }
     #endregion
+}
 
+// extension part
+public partial class BlockElement
+{
+    #region --- JOB OBJECT KILL TREE ---
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool SetInformationJobObject(IntPtr hJob, int JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+
+    private IntPtr _jobHandle;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+    {
+        public long PerProcessUserTimeLimit;
+        public long PerJobUserTimeLimit;
+        public int LimitFlags;
+        public UIntPtr MinimumWorkingSetSize;
+        public UIntPtr MaximumWorkingSetSize;
+        public int ActiveProcessLimit;
+        public long Affinity;
+        public int PriorityClass;
+        public int SchedulingClass;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    struct IO_COUNTERS
+    {
+        public ulong ReadOperationCount;
+        public ulong WriteOperationCount;
+        public ulong OtherOperationCount;
+        public ulong ReadTransferCount;
+        public ulong WriteTransferCount;
+        public ulong OtherTransferCount;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+    {
+        public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+        public IO_COUNTERS IoInfo;
+        public UIntPtr ProcessMemoryLimit;
+        public UIntPtr JobMemoryLimit;
+        public UIntPtr PeakProcessMemoryUsed;
+        public UIntPtr PeakJobMemoryUsed;
+    }
+
+    private const int JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9;
+    private const int JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
+    
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr hObject);
+
+    #endregion
+    
     public void SetFileNameText()
     {
         if (!string.IsNullOrEmpty(PythonFilePath))
@@ -495,6 +532,7 @@ public partial class BlockElement
                 _loopTimer.Start();
 
                 UpdateLoopStatus();
+                UpdatePeriodTimeTextBlock();
             }
             else
             {
@@ -508,4 +546,26 @@ public partial class BlockElement
     }
 
     private void Rerun_Click(object sender, RoutedEventArgs e) => RunPythonScript();
+    
+    private void Block_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStart = e.GetPosition(this);
+        _isDragging = false;
+    }
+
+    private void Block_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        var pos = e.GetPosition(this);
+        var diff = pos - _dragStart;
+
+        if (_isDragging || (!(Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance) &&
+                            !(Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance))) return;
+        _isDragging = true;
+
+        DragDrop.DoDragDrop(this, this, DragDropEffects.Move);
+    }
 }
+

@@ -50,6 +50,7 @@
                                     <ImageBrush x:Name="LoopIconImage" ImageSource="/Resource/Icons/loop.png"/>
                                 </Button.Background>
                             </Button>
+                            <TextBlock x:Name="PeriodTime" Foreground="Green" />
                             <Button x:Name="InputToggleButton"
                                     Style="{StaticResource FlatImageButtonStyle}"
                                     Click="ToggleInput_Click" Width="20" Height="20" ToolTip="Input field">
