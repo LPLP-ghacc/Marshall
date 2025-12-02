@@ -21,11 +21,14 @@ public partial class MainWindow : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    
+    public static MainWindow Instance { get; set; }
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
+        Instance = this;
         
         MStackPanel.AllowDrop = true;
         MStackPanel.DragOver += MStackPanel_DragOver;
@@ -210,15 +213,13 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void LoadAllConfigs()
     {
-        foreach(var cfg in _appConfig.Blocks)
+        foreach (var block in _appConfig.Blocks.Select(cfg => new BlockElement(RemoveBlockElement)
+                 {
+                     PythonFilePath = cfg.PythonFilePath,
+                     IsLooping = cfg.IsLooping,
+                     LoopInterval = cfg.LoopIntervalSeconds
+                 }))
         {
-            var block = new BlockElement(RemoveBlockElement)
-            {
-                PythonFilePath = cfg.PythonFilePath,
-                IsLooping = cfg.IsLooping,
-                LoopInterval = cfg.LoopIntervalSeconds
-            };
-
             _blocks.Add(block);
             MStackPanel.Children.Add(block);
 
@@ -237,13 +238,16 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         _isRestoring = true;
 
-        LeftCol.Width = _appConfig.PanelState.Left;
-        
-        ScriptBrowser.Visibility = Visibility.Visible;
-        ScriptBrowser.InvalidateMeasure();
-        ScriptBrowser.UpdateLayout();
-        
-        RightCol.Width = _appConfig.PanelState.Right;
+        if (_appConfig.PanelState != null)
+        {
+            LeftCol.Width = _appConfig.PanelState.Left;
+
+            ScriptBrowser.Visibility = Visibility.Visible;
+            ScriptBrowser.InvalidateMeasure();
+            ScriptBrowser.UpdateLayout();
+
+            RightCol.Width = _appConfig.PanelState.Right;
+        }
 
         ScriptBrowserHideChecker.IsChecked = LeftCol.Width.Value > 0;
         ScriptEditorHideChecker.IsChecked = RightCol.Width.Value > 0;
@@ -378,5 +382,10 @@ public partial class MainWindow : INotifyPropertyChanged
             _wallControl.Update();
         };
         _wallpaperTimer.Start();
+    }
+
+    private void Minimize_OnClick_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
     }
 }

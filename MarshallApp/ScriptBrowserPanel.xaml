@@ -40,7 +40,7 @@
         </Style>
     </UserControl.Resources>
     
-    <Grid Background="#222">
+    <Grid Background="{StaticResource PanelsBrush2}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
@@ -48,7 +48,7 @@
         <TextBlock Text="Browser" Foreground="White" FontWeight="Bold" Margin="10" FontSize="14"/>
         <ListBox x:Name="ScriptList"
                  Grid.Row="1"
-                 Background="#333"
+                 Background="{StaticResource PanelsBrush}"
                  Foreground="White"
                  Margin="5"
                  HorizontalContentAlignment="Stretch"

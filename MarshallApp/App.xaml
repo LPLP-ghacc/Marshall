@@ -286,6 +286,10 @@
         
         <Color x:Key="PrimaryColor">#111</Color>
         <Brush x:Key="PrimaryBrush">#111</Brush>
+        <Color x:Key="PanelsColor">#1E1E1E</Color>
+        <Brush x:Key="PanelsBrush">#1E1E1E</Brush>
+        <Color x:Key="PanelsColo2">#252526</Color>
+        <Brush x:Key="PanelsBrush2">#252526</Brush>
         <Color x:Key="AdditionalColor">#333</Color>
         <Brush x:Key="AdditionalBrush">#333</Brush>
         <Color x:Key="AdditionalColo2">#222</Color>

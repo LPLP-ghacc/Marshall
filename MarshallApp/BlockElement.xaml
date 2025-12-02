@@ -62,7 +62,6 @@
                     </Grid>
                     <Button Style="{StaticResource FlatButtonStyle}" Content="RERUN" FontStyle="Italic" Click="Rerun_Click"/>
                 </StackPanel>
-                
             </Border>
 
             <Grid Grid.Row="1">

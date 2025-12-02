@@ -7,6 +7,7 @@
         xmlns:chrome="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         mc:Ignorable="d"
         Height="800" Width="1200" 
+        MinHeight="200" MinWidth="600"
         ResizeMode="CanResizeWithGrip" 
         WindowStyle="None"
         Background="{StaticResource PrimaryBrush}" 
@@ -16,7 +17,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome 
             CaptionHeight="0"
-            ResizeBorderThickness="2" 
+            ResizeBorderThickness="4" 
             CornerRadius="5"
             GlassFrameThickness="5"/>
     </WindowChrome.WindowChrome>
@@ -147,6 +148,11 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <Button x:Name="Minimize" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Minimize_OnClick_Click">
+                        <Grid>
+                            <Line X1="0" Y1="0" X2="15" Y2="0" Stroke="White" />
+                        </Grid>
+                    </Button>
                     <Button x:Name="Fullscreen" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Fullscreen_Click">
                         <Grid>
                             <Path x:Name="FullscreenEnter" 

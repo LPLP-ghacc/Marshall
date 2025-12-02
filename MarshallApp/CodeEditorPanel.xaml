@@ -27,7 +27,7 @@
                            FontFamily="Consolas"
                            FontSize="14"
                            SyntaxHighlighting="Python"
-                           Background="#1E1E1E"
+                           Background="{StaticResource PanelsBrush}"
                            Foreground="#D4D4D4"
                            ShowLineNumbers="True"
                            ScrollViewer.VerticalScrollBarVisibility="Auto"

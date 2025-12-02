@@ -34,9 +34,8 @@ public partial class ScriptBrowserPanel
                 Tag = file,
                 Margin = new Thickness(0),
                 Height = 30,
-                Width = 150,
-                HorizontalContentAlignment =  HorizontalAlignment.Center,
-                HorizontalAlignment =  HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
                 Padding = new Thickness(6, 3, 6, 3),
                 Style = (Style?)Application.Current.FindResource("FlatButtonStyle")
             };
@@ -71,7 +70,12 @@ public partial class ScriptBrowserPanel
 
             button.ContextMenu = contextMenu;
 
-            button.Click += (_, _) => ScriptSelected?.Invoke(file);
+            button.Click += (_, _) =>
+            {
+                ScriptSelected?.Invoke(file);
+                
+                MainWindow.Instance.RightCol.Width = new GridLength(MainWindow.Instance.RightCol.MaxWidth);
+            };
 
             ScriptList.Items.Add(button);
         }

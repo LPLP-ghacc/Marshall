@@ -366,9 +366,14 @@ public partial class BlockElement
         
         if (IsLooping)
         {
-            var input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString(CultureInfo.InvariantCulture));
-            if (double.TryParse(input, out var sec) && sec > 0)
-                LoopInterval = sec;
+            var input = new InputBoxWindow("Loop Settings", "Interval in seconds:", (sec) => LoopInterval = double.Parse(sec) > 0 ? double.Parse(sec) : 0, LoopInterval.ToString(CultureInfo.InvariantCulture))
+                {
+                    Owner = Application.Current.MainWindow
+                };
+            input.ShowDialog();
+            //var input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString(CultureInfo.InvariantCulture));
+            //if (double.TryParse(input, out var sec) && sec > 0)
+            //    LoopInterval = sec;
 
             _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
             _loopTimer.Tick += (_, _) => RunPythonScript();
