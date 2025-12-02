@@ -12,6 +12,7 @@ namespace MarshallApp;
 
 public partial class BlockElement
 {
+    public bool IsRunning => _activeProcess is { HasExited: false };
     private readonly string _iconsPath;
     private CancellationTokenSource? _cts;
     private readonly Action<BlockElement>? _removeCallback;
@@ -23,6 +24,8 @@ public partial class BlockElement
     private bool _isInputVisible;
     private Point _dragStart;
     private bool _isDragging;
+    
+    public double OutputFontSize { get; set; } = 14.0;
 
     public BlockElement(Action<BlockElement>? removeCallback)
     {
@@ -371,9 +374,6 @@ public partial class BlockElement
                     Owner = Application.Current.MainWindow
                 };
             input.ShowDialog();
-            //var input = Microsoft.VisualBasic.Interaction.InputBox("Interval in seconds:", "Loop Settings", LoopInterval.ToString(CultureInfo.InvariantCulture));
-            //if (double.TryParse(input, out var sec) && sec > 0)
-            //    LoopInterval = sec;
 
             _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
             _loopTimer.Tick += (_, _) => RunPythonScript();
@@ -410,7 +410,7 @@ public partial class BlockElement
     private void UpdateLoopStatus()
     {
         if (IsLooping)
-            OutputText.Text = $"Loop: ON | Interval: {LoopInterval}s | File: {Path.GetFileNameWithoutExtension(PythonFilePath)}";
+            OutputText.Text = $"Waiting for the next call...\n\nLoop: ON | Interval: {LoopInterval}s | File: {Path.GetFileNameWithoutExtension(PythonFilePath)}";
     }
 
     private void StopLoop()
@@ -457,6 +457,28 @@ public partial class BlockElement
         UserInputBox.Clear();
     }
     #endregion
+    
+    private void OutputText_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (!Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl)) return;
+        if (e.Delta > 0)
+            OutputFontSize += 1;
+        else
+            OutputFontSize -= 1;
+
+        if (OutputFontSize < 8) OutputFontSize = 8;
+        if (OutputFontSize > 40) OutputFontSize = 40;
+
+        OutputText.FontSize = OutputFontSize;
+
+        e.Handled = true;
+    }
+    
+    
+    private void OnOutputLoaded(object sender, RoutedEventArgs e)
+    {
+        OutputText.FontSize = OutputFontSize;
+    }
 }
 
 // extension part
@@ -571,6 +593,11 @@ public partial class BlockElement
         _isDragging = true;
 
         DragDrop.DoDragDrop(this, this, DragDropEffects.Move);
+    }
+
+    private void CallLogViewer_Click(object sender, RoutedEventArgs e)
+    {
+        MainWindow.Instance.ShowLogViewer(this);
     }
 }
 

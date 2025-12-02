@@ -12,6 +12,14 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
+            <Button HorizontalAlignment="Right" Width="20" Height="20" Style="{StaticResource FlatButtonStyle}" Click="CallLogViewer_Click">
+                <Path Width="16" Height="16" Stretch="Uniform" Stroke="#CCFFFFFF" StrokeThickness="1.5" StrokeLineJoin="Round" Fill="Transparent"
+                      Data="M2,2 L14,2 L14,14 L2,14 Z
+                            M4,4 L12,4
+                            M4,7 L12,7
+                            M4,10 L12,10
+                            M4,13 L8,13"/>
+            </Button>
             <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.Row="0">
                 <StackPanel Orientation="Horizontal">
                     <Grid HorizontalAlignment="Left">
@@ -74,7 +82,7 @@
                     <TextBlock x:Name="OutputText"
                                TextWrapping="Wrap"
                                Foreground="White"
-                               FontFamily="Consolas"/>
+                               FontFamily="Consolas" PreviewMouseWheel="OutputText_MouseWheel" Loaded="OnOutputLoaded"/>
                 </ScrollViewer>
 
                 <TextBox x:Name="UserInputBox"

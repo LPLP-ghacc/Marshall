@@ -106,6 +106,10 @@
     <Content Include="Resource\Icons\send.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Remove="Resource\Icons\IconSmall.ico" />
+    <Content Include="Resource\Icons\IconSmall.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

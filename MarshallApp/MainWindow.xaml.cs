@@ -1,18 +1,27 @@
 ﻿using MarshallApp.Models;
 using MarshallApp.Services;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Threading;
 using MarshallApp.Controllers;
+using DragDropEffects = System.Windows.DragDropEffects;
+using DragEventArgs = System.Windows.DragEventArgs;
+using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
+using Point = System.Windows.Point;
 
 namespace MarshallApp;
 
 public partial class MainWindow : INotifyPropertyChanged
 {
+    private NotifyIcon _trayIcon;
+    
     private bool _isRestoring;
     private readonly AppConfig _appConfig;
     private readonly List<BlockElement> _blocks = [];
@@ -53,6 +62,84 @@ public partial class MainWindow : INotifyPropertyChanged
         LoadPanelState();
         LoadAllConfigs();
         NewScript();
+        InitializeTray();
+    }
+    
+    private void InitializeTray()
+    {
+        _trayIcon = new NotifyIcon();
+        _trayIcon.Icon = new Icon(Path.Combine(Environment.CurrentDirectory, "Resource/Icons/IconSmall.ico"));
+        _trayIcon.Visible = true;
+
+        _trayIcon.Text = "Marshall";
+        _trayIcon.ContextMenuStrip = new ContextMenuStrip();
+
+        _trayIcon.MouseUp += TrayIcon_MouseUp;
+    }
+
+    private void TrayIcon_MouseUp(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left && e.Button != MouseButtons.Right) return;
+
+        var menu = _trayIcon.ContextMenuStrip;
+        Debug.Assert(menu != null, nameof(menu) + " != null");
+        
+        menu.Items.Clear();
+
+        menu.Items.Add("Running scripts:").Enabled = false;
+        menu.Items.Add(new ToolStripSeparator());
+
+        if (_blocks.Count == 0)
+        {
+            menu.Items.Add("(no scripts)").Enabled = false;
+        }
+        else
+        {
+            foreach (var block in _blocks)
+            {
+                var name = string.IsNullOrEmpty(block.PythonFilePath)
+                    ? "(unnamed)"
+                    : Path.GetFileName(block.PythonFilePath);
+
+                var item = new ToolStripMenuItem(name);
+
+                item.Click += (_, _) => ShowLogViewer(block);
+
+                if (block.IsLooping)
+                    item.ForeColor = Color.Green;
+                else if (block.IsRunning)
+                    item.ForeColor = Color.Blue;
+
+                menu.Items.Add(item);
+            }
+        }
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        var exit = new ToolStripMenuItem("Exit");
+        exit.Click += (_, _) => 
+        {
+            SaveAppConfig();
+            Environment.Exit(0);
+        };
+
+        menu.Items.Add(exit);
+
+        menu.Show(System.Windows.Forms.Cursor.Position);
+    }
+    
+    public void ShowLogViewer(BlockElement block)
+    {
+        var name = block.PythonFilePath != null
+            ? Path.GetFileName(block.PythonFilePath)
+            : "(unnamed script)";
+
+        var window = new LogViewer(
+            name,
+            block.OutputText.Text
+        );
+
+        window.Show();
     }
 
     private void NewScript()
@@ -196,7 +283,7 @@ public partial class MainWindow : INotifyPropertyChanged
         _appConfig.WindowHeight = Height;
 
         _appConfig.PanelState = new PanelState(LeftCol.Width, RightCol.Width);
-
+        
         _appConfig.Blocks.Clear();
         foreach(var block in _blocks)
         {
@@ -204,7 +291,8 @@ public partial class MainWindow : INotifyPropertyChanged
             {
                 PythonFilePath = block.PythonFilePath,
                 IsLooping = block.IsLooping,
-                LoopIntervalSeconds = block.LoopInterval
+                LoopIntervalSeconds = block.LoopInterval,
+                OutputFontSize = block.OutputFontSize
             });
         }
 
@@ -217,7 +305,8 @@ public partial class MainWindow : INotifyPropertyChanged
                  {
                      PythonFilePath = cfg.PythonFilePath,
                      IsLooping = cfg.IsLooping,
-                     LoopInterval = cfg.LoopIntervalSeconds
+                     LoopInterval = cfg.LoopIntervalSeconds,
+                     OutputFontSize = cfg.OutputFontSize
                  }))
         {
             _blocks.Add(block);

@@ -5,5 +5,7 @@
         public string? PythonFilePath { get; set; }
         public bool IsLooping { get; set; }
         public double LoopIntervalSeconds { get; set; } = 5.0;
+
+        public double OutputFontSize { get; set; } = 14.0; 
     }
 }
