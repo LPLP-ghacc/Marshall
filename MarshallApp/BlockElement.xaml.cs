@@ -24,7 +24,8 @@ public partial class BlockElement
     private bool _isInputVisible;
     private Point _dragStart;
     private bool _isDragging;
-    
+    private bool _pendingClear;
+
     public double OutputFontSize { get; set; } = 14.0;
 
     public BlockElement(Action<BlockElement>? removeCallback)
@@ -54,7 +55,8 @@ public partial class BlockElement
 
         OpenPythonInstallerPage();
         SetFileNameText();
-
+        _pendingClear = true;
+        
         _cts = new CancellationTokenSource();
 
         try
@@ -83,7 +85,7 @@ public partial class BlockElement
             // Create JobObject if not created yet
             CreateJobObject();
             AssignProcessToJobObject(_jobHandle, _activeProcess.Handle);
-
+            
             Task.Run(async () =>
             {
                 try
@@ -91,12 +93,18 @@ public partial class BlockElement
                     using var reader = _activeProcess.StandardOutput;
                     var buffer = new char[1024];
                     int charsRead;
-            
+                    
                     while ((charsRead = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
                         var text = new string(buffer, 0, charsRead);
                         Dispatcher.Invoke(() =>
                         {
+                            if (_pendingClear)
+                            {
+                                OutputText.Text = string.Empty;  // чистим только один раз!
+                                _pendingClear = false;
+                            }
+                            
                             var cleaned = text.Replace("\r", "\n").Replace("\n\n", "\n");
                             OutputText.Text += cleaned;
                             Scroll.ScrollToEnd();
@@ -156,8 +164,8 @@ public partial class BlockElement
             {
                 Dispatcher.Invoke(() =>
                 {
-                    if (!IsLooping)
-                        OutputText.Text += "\n\n[Process exited]\n";
+                    //if (!IsLooping)
+                    //    OutputText.Text += "\n\n[Process exited]\n";
                 });
             };
         }
