@@ -73,8 +73,16 @@ public partial class ScriptBrowserPanel
             button.Click += (_, _) =>
             {
                 ScriptSelected?.Invoke(file);
-                
-                MainWindow.Instance.RightCol.Width = new GridLength(MainWindow.Instance.RightCol.MaxWidth);
+
+                try
+                {
+                    if (MainWindow.Instance != null)
+                        MainWindow.Instance.RightCol.Width = new GridLength(MainWindow.Instance.RightCol.MaxWidth);
+                }
+                catch
+                {
+                    // ignored
+                }
             };
 
             ScriptList.Items.Add(button);
