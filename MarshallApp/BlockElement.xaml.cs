@@ -2,11 +2,14 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using MarshallApp.Models;
+// ReSharper disable InconsistentNaming
 
 namespace MarshallApp;
 
@@ -25,10 +28,10 @@ public partial class BlockElement
     private Point _dragStart;
     private bool _isDragging;
     private bool _pendingClear;
-
+    private readonly LimitSettings _limitSettings;
     public double OutputFontSize { get; set; } = 14.0;
 
-    public BlockElement(Action<BlockElement>? removeCallback)
+    public BlockElement(Action<BlockElement>? removeCallback, LimitSettings limitSettings)
     {
         InitializeComponent();
         
@@ -36,6 +39,8 @@ public partial class BlockElement
         this.PreviewMouseLeftButtonDown += Block_PreviewMouseLeftButtonDown;
         
         _removeCallback = removeCallback;
+        this._limitSettings = limitSettings;
+        
         _iconsPath = Path.Combine(Environment.CurrentDirectory + "/Resource/Icons/");
         UpdateLoopIcon(IsLooping);
         
@@ -88,7 +93,7 @@ public partial class BlockElement
             CreateJobObject();
             AssignProcessToJobObject(_jobHandle, _activeProcess.Handle);
             
-            Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 try
                 {
@@ -113,13 +118,13 @@ public partial class BlockElement
                         });
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignored
+                    SendExceptionMessage(ex);
                 }
             }, _cts.Token);
             
-            Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 try
                 {
@@ -140,7 +145,7 @@ public partial class BlockElement
                             if (installed)
                             {
                                 Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
-                                Dispatcher.Invoke(RunPythonScript);
+                                await Dispatcher.Invoke(RunPythonScript);
                             }
                             else
                             {
@@ -156,9 +161,9 @@ public partial class BlockElement
                         });
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignored
+                    SendExceptionMessage(ex);
                 }
             }, _cts.Token);
 
@@ -166,8 +171,7 @@ public partial class BlockElement
             {
                 Dispatcher.Invoke(() =>
                 {
-                    //if (!IsLooping)
-                    //    OutputText.Text += "\n\n[Process exited]\n";
+
                 });
             };
         }
@@ -192,17 +196,46 @@ public partial class BlockElement
     private void CreateJobObject()
     {
         if (_jobHandle != IntPtr.Zero) return;
+    
         _jobHandle = CreateJobObject(IntPtr.Zero, null);
 
+        // --- MEMORY LIMIT ---
         var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
         info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+
+        if (_limitSettings.MemoryLimitMb > 0)
+        {
+            info.BasicLimitInformation.LimitFlags |= 0x100; // JOB_OBJECT_LIMIT_PROCESS_MEMORY
+            info.ProcessMemoryLimit = (UIntPtr)(_limitSettings.MemoryLimitMb * (int)1024UL * (int)1024UL);
+        }
 
         SetInformationJobObject(
             _jobHandle,
             JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
             ref info,
-            System.Runtime.InteropServices.Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()
+            Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()
         );
+
+        // --- CPU LIMIT ---
+        if (_limitSettings.CpuLimitPercent <= 0 || _limitSettings.CpuLimitPercent > 100) return;
+        var cpuInfo = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        {
+            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
+            CpuRate = (uint)(_limitSettings.CpuLimitPercent * 100) // 1% = 100 (Windows API)
+        };
+
+        var size = Marshal.SizeOf(cpuInfo);
+        var ptr = Marshal.AllocHGlobal(size);
+        Marshal.StructureToPtr(cpuInfo, ptr, false);
+
+        SetInformationJobObject(
+            _jobHandle,
+            JobObjectCpuRateControlInformation,
+            ptr,
+            size
+        );
+
+        Marshal.FreeHGlobal(ptr);
     }
 
     #region Python things
@@ -283,9 +316,9 @@ public partial class BlockElement
             _cts?.Cancel();
 
             try { _activeProcess.StandardInput.BaseStream.Close(); }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                SendExceptionMessage(ex);
             }
 
             if (_activeProcess.HasExited) return;
@@ -300,50 +333,14 @@ public partial class BlockElement
             CloseHandle(_jobHandle);
             _jobHandle = IntPtr.Zero;
         }
-        catch { /* ignored */ }
+        catch (Exception ex)
+        {
+            SendExceptionMessage(ex);
+        }
         finally
         {
             _activeProcess?.Dispose();
             _activeProcess = null;
-        }
-        
-        //LastHope();
-    }
-
-    /// <summary>
-    /// Extremely dangerous method, don't use it
-    /// </summary>
-    private static void LastHope()
-    {
-        try
-        {
-            var currentProcess = Process.GetCurrentProcess();
-            var currentSessionId = currentProcess.SessionId;
-
-            foreach (var proc in Process.GetProcessesByName("python"))
-            {
-                if (proc.SessionId != currentSessionId) continue;
-                try
-                {
-                    if (proc.HasExited) continue;
-                    proc.Kill();
-                    proc.WaitForExit(2000);
-                }
-                catch { /* ignored */ }
-                finally { proc.Dispose(); }
-            }
-
-            foreach (var proc in Process.GetProcessesByName("pythonw"))
-            {
-                if (proc.SessionId != currentSessionId) continue;
-                try { if (!proc.HasExited) proc.Kill(); }
-                catch { /* ignored */ }
-                finally { proc.Dispose(); }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
         }
     }
 
@@ -370,7 +367,7 @@ public partial class BlockElement
         if (dlg.ShowDialog() != true) return;
         PythonFilePath = dlg.FileName;
         SetFileNameText();
-        RunPythonScript();
+        _ = RunPythonScript();
     }
 
     private void CopyButton_Click(object sender, RoutedEventArgs e) => Clipboard.SetText(OutputText.Text);
@@ -392,7 +389,7 @@ public partial class BlockElement
             input.ShowDialog();
 
             _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-            _loopTimer.Tick += (_, _) => RunPythonScript();
+            _loopTimer.Tick += (_, _) => _ = RunPythonScript();
             _loopTimer.Start();
 
             UpdateLoopIcon(true);
@@ -500,20 +497,42 @@ public partial class BlockElement
 // extension part
 public partial class BlockElement
 {
+    #region CPU LIMIT
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+    {
+        public uint ControlFlags;
+        public uint CpuRate;
+    }
+
+    private const uint JOB_OBJECT_CPU_RATE_CONTROL_ENABLE = 0x1;
+    private const uint JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP = 0x4;
+    private const int JobObjectCpuRateControlInformation = 15;
+    
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(
+        IntPtr hJob,
+        int JobObjectInfoClass,
+        IntPtr lpJobObjectInfo,
+        int cbJobObjectInfoLength);
+
+    #endregion
+    
     #region --- JOB OBJECT KILL TREE ---
 
-    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
 #pragma warning disable SYSLIB1054
     private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
 #pragma warning restore SYSLIB1054
 
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll")]
 #pragma warning disable SYSLIB1054
     // ReSharper disable once InconsistentNaming
     private static extern bool SetInformationJobObject(IntPtr hJob, int JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
 #pragma warning restore SYSLIB1054
 
-    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
 #pragma warning disable SYSLIB1054
     private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
 #pragma warning restore SYSLIB1054
@@ -522,7 +541,7 @@ public partial class BlockElement
 
     // ReSharper disable once ArrangeTypeMemberModifiers
     // ReSharper disable once InconsistentNaming
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     struct JOBOBJECT_BASIC_LIMIT_INFORMATION
     {
         public long PerProcessUserTimeLimit;
@@ -538,7 +557,7 @@ public partial class BlockElement
 
     // ReSharper disable once ArrangeTypeMemberModifiers
     // ReSharper disable once InconsistentNaming
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     struct IO_COUNTERS
     {
         public ulong ReadOperationCount;
@@ -551,7 +570,7 @@ public partial class BlockElement
 
     // ReSharper disable once ArrangeTypeMemberModifiers
     // ReSharper disable once InconsistentNaming
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
     {
         public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
@@ -567,7 +586,7 @@ public partial class BlockElement
     // ReSharper disable once InconsistentNaming
     private const int JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
     
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll")]
 #pragma warning disable SYSLIB1054
     private static extern bool CloseHandle(IntPtr hObject);
 #pragma warning restore SYSLIB1054
@@ -588,7 +607,7 @@ public partial class BlockElement
             if (!string.IsNullOrEmpty(PythonFilePath) && File.Exists(PythonFilePath))
             {
                 _loopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(LoopInterval) };
-                _loopTimer.Tick += (_, _) => RunPythonScript();
+                _loopTimer.Tick += (_, _) => _ = RunPythonScript();
                 _loopTimer.Start();
 
                 UpdateLoopStatus();
@@ -611,7 +630,7 @@ public partial class BlockElement
         {
             OutputText.Text = string.Empty;
         });
-        RunPythonScript();
+        _ = RunPythonScript();
     } 
     
     private void Block_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -638,5 +657,13 @@ public partial class BlockElement
     private void CallLogViewer_Click(object sender, RoutedEventArgs e)
     {
         MainWindow.Instance?.ShowLogViewer(this);
+    }
+
+    private void SendExceptionMessage(Exception ex)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            OutputText.Text = ex.Message;
+        });
     }
 }
