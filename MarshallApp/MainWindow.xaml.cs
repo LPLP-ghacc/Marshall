@@ -99,9 +99,9 @@ public partial class MainWindow : INotifyPropertyChanged
         {
             foreach (var block in _blocks)
             {
-                var name = string.IsNullOrEmpty(block.PythonFilePath)
+                var name = string.IsNullOrEmpty(block.FilePath)
                     ? "(unnamed)"
-                    : Path.GetFileName(block.PythonFilePath);
+                    : Path.GetFileName(block.FilePath);
 
                 var item = new ToolStripMenuItem(name);
 
@@ -132,8 +132,8 @@ public partial class MainWindow : INotifyPropertyChanged
     
     public void ShowLogViewer(BlockElement block)
     {
-        var name = block.PythonFilePath != null
-            ? Path.GetFileName(block.PythonFilePath)
+        var name = block.FilePath != null
+            ? Path.GetFileName(block.FilePath)
             : "(unnamed script)";
 
         var window = new LogViewer(
@@ -187,7 +187,7 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         var block = new BlockElement(RemoveBlockElement, _limitSettings)
         {
-            PythonFilePath = filePath
+            FilePath = filePath
         };
 
         _blocks.Add(block);
@@ -298,7 +298,7 @@ public partial class MainWindow : INotifyPropertyChanged
         {
             _appConfig.Blocks.Add(new BlockConfig
             {
-                PythonFilePath = block.PythonFilePath,
+                PythonFilePath = block.FilePath,
                 IsLooping = block.IsLooping,
                 LoopIntervalSeconds = block.LoopInterval,
                 OutputFontSize = block.OutputFontSize
@@ -312,7 +312,7 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         foreach (var block in _appConfig.Blocks.Select(cfg => new BlockElement(RemoveBlockElement, _limitSettings)
                  {
-                     PythonFilePath = cfg.PythonFilePath,
+                     FilePath = cfg.PythonFilePath,
                      IsLooping = cfg.IsLooping,
                      LoopInterval = cfg.LoopIntervalSeconds,
                      OutputFontSize = cfg.OutputFontSize
@@ -321,7 +321,7 @@ public partial class MainWindow : INotifyPropertyChanged
             _blocks.Add(block);
             MStackPanel.Children.Add(block);
 
-            if(!string.IsNullOrEmpty(block.PythonFilePath) && File.Exists(block.PythonFilePath))
+            if(!string.IsNullOrEmpty(block.FilePath) && File.Exists(block.FilePath))
             {
                 block.SetFileNameText();
                 _ = block.RunPythonScript();
