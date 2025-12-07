@@ -4,7 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using MarshallApp.Models;
@@ -13,6 +15,230 @@ using MarshallApp.Services;
 // ReSharper disable InconsistentNaming
 
 namespace MarshallApp;
+
+public partial class BlockElement
+{
+    public double WidthUnits { get; set; }
+    public double HeightUnits { get; set; }
+    private Point _mouseOffset;
+    public const double GridSize = 15;
+    private const double BaseBlockSize = 500;
+    private bool _isResizing;
+    private ResizeDirection _resizeDir = ResizeDirection.None;
+    private enum ResizeDirection
+    {
+        None,
+        Left,
+        Right,
+        Top,
+        Bottom,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
+
+    public static double Snap(double value)
+    {
+        return Math.Round(value / GridSize) * GridSize;
+    }
+    
+    private void UserControl_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        var pos = e.GetPosition(this);
+
+        // --- TRY START RESIZE ---
+        _resizeDir = GetResizeDirection(pos, 8);
+        if (_resizeDir != ResizeDirection.None)
+        {
+            _isResizing = true;
+            CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
+        // --- START DRAG ---
+        _mouseOffset = pos;
+        _isDragging = true;
+        CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void UserControl_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (VisualTreeHelper.GetParent(this) is not Canvas canvas) return;
+    
+        var pos = e.GetPosition(this);
+    
+        const double edge = 8;
+    
+        if (!_isResizing && !_isDragging)
+        {
+            _resizeDir = GetResizeDirection(pos, edge);
+    
+            Cursor = _resizeDir switch
+            {
+                ResizeDirection.Left => Cursors.SizeWE,
+                ResizeDirection.Right => Cursors.SizeWE,
+                ResizeDirection.Top => Cursors.SizeNS,
+                ResizeDirection.Bottom => Cursors.SizeNS,
+                ResizeDirection.TopLeft => Cursors.SizeNWSE,
+                ResizeDirection.TopRight => Cursors.SizeNESW,
+                ResizeDirection.BottomLeft => Cursors.SizeNESW,
+                ResizeDirection.BottomRight => Cursors.SizeNWSE,
+                _ => Cursors.Arrow
+            };
+    
+            if (Cursor != Cursors.Arrow)
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+    
+        // ----- RESIZING -----
+        if (_isResizing && e.LeftButton == MouseButtonState.Pressed)
+        {
+            var globalPos = e.GetPosition(canvas);
+    
+            var left = Canvas.GetLeft(this);
+            var top = Canvas.GetTop(this);
+            var right = left + Width;
+            var bottom = top + Height;
+
+            switch (_resizeDir)
+            {
+                // horizon
+                case ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft:
+                {
+                    var newLeft = GridUtils.Snap(globalPos.X);
+                    var newWidth = right - newLeft;
+                    if (newWidth > GridSize)
+                    {
+                        Width = newWidth;
+                        Canvas.SetLeft(this, newLeft);
+                    }
+
+                    break;
+                }
+                case ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight:
+                {
+                    var newRight = GridUtils.Snap(globalPos.X);
+                    var newWidth = newRight - left;
+                    if (newWidth > GridSize)
+                        Width = newWidth;
+                    break;
+                }
+            }
+
+            switch (_resizeDir)
+            {
+                // vertical
+                case ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight:
+                {
+                    var newTop = GridUtils.Snap(globalPos.Y);
+                    var newHeight = bottom - newTop;
+                    if (newHeight > GridSize)
+                    {
+                        Height = newHeight;
+                        Canvas.SetTop(this, newTop);
+                    }
+
+                    break;
+                }
+                case ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight:
+                {
+                    var newBottom = GridUtils.Snap(globalPos.Y);
+                    var newHeight = newBottom - top;
+                    if (newHeight > GridSize)
+                        Height = newHeight;
+                    break;
+                }
+            }
+    
+            e.Handled = true;
+            return;
+        }
+    
+        // ----- DRAG -----
+        if (!_isDragging || e.LeftButton != MouseButtonState.Pressed) return;
+        DragMove(e, canvas);
+        e.Handled = true;
+    }
+    
+    private ResizeDirection GetResizeDirection(Point pos, double edge)
+    {
+        var left = pos.X <= edge;
+        var right = pos.X >= ActualWidth - edge;
+        var top = pos.Y <= edge;
+        var bottom = pos.Y >= ActualHeight - edge;
+
+        return (left, right, top, bottom) switch
+        {
+            (true, false, true, false) => ResizeDirection.TopLeft,
+            (false, true, true, false) => ResizeDirection.TopRight,
+            (true, false, false, true) => ResizeDirection.BottomLeft,
+            (false, true, false, true) => ResizeDirection.BottomRight,
+            (true, false, false, false) => ResizeDirection.Left,
+            (false, true, false, false) => ResizeDirection.Right,
+            (false, false, true, false) => ResizeDirection.Top,
+            (false, false, false, true) => ResizeDirection.Bottom,
+            _ => ResizeDirection.None
+        };
+    }
+    
+    private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        bool wasResizingOrDragging = _isResizing || _isDragging;
+
+        if (_isResizing)
+        {
+            _isResizing = false;
+        }
+
+        if (_isDragging)
+        {
+            _isDragging = false;
+        }
+
+        ReleaseMouseCapture();
+
+        if (wasResizingOrDragging)
+        {
+            WidthUnits = Math.Max(1, Math.Round(Width / GridSize));
+            HeightUnits = Math.Max(1, Math.Round(Height / GridSize));
+        }
+
+        e.Handled = true;
+    }
+    
+    private void DragMove(MouseEventArgs e, Canvas canvas)
+    {
+        var pos = e.GetPosition(canvas);
+
+        var newLeft = GridUtils.Snap(pos.X - _mouseOffset.X);
+        var newTop = GridUtils.Snap(pos.Y - _mouseOffset.Y);
+
+        if (newLeft < 0) newLeft = 0;
+        if (newTop < 0) newTop = 0;
+
+        Canvas.SetLeft(this, newLeft);
+        Canvas.SetTop(this, newTop);
+    }
+    
+    private void BlockElement_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        MainBorder.BorderThickness = new Thickness(2);
+    }
+    
+    private void BlockElement_OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        MainBorder.BorderThickness = new Thickness(1);
+    }
+}
 
 public partial class BlockElement
 {
@@ -27,22 +253,24 @@ public partial class BlockElement
     private DispatcherTimer? _loopTimer;
     private Process? _activeProcess;
     private bool _isInputVisible;
-    private Point _dragStart;
     private bool _isDragging;
     private bool _pendingClear;
     public double OutputFontSize { get; set; } = 14.0;
-
-    public Action? OnProcessExited;
-    public Action<Process>? OnProcessStart;
-    public Action? OnProcessKilled;
     public bool IsRunning => _activeProcess is { HasExited: false };
     
     public BlockElement(Action<BlockElement>? removeCallback, LimitSettings limitSettings)
     {
         InitializeComponent();
         
-        this.PreviewMouseMove += Block_PreviewMouseMove;
-        this.PreviewMouseLeftButtonDown += Block_PreviewMouseLeftButtonDown;
+        Width = BaseBlockSize;
+        Height = BaseBlockSize;
+
+        SetFileNameText("(empty)");
+        WidthUnits = Math.Max(1, Math.Round(Width / GridSize));
+        HeightUnits = Math.Max(1, Math.Round(Height / GridSize));
+        
+        Width = WidthUnits * GridSize;
+        Height = HeightUnits * GridSize;
         
         _removeCallback = removeCallback;
         _jobManager = new JobManager(limitSettings);
@@ -128,7 +356,6 @@ public partial class BlockElement
             }
 
             if (_activeProcess.HasExited) return;
-            OnProcessExited?.Invoke();
             
             if (!forceKill) return;
             if (!_activeProcess.HasExited)
@@ -148,8 +375,6 @@ public partial class BlockElement
             _activeProcess?.Dispose();
             _activeProcess = null;
         }
-        
-        OnProcessKilled?.Invoke();
         
         // Sayonara
         GC.Collect();
@@ -313,6 +538,12 @@ public partial class BlockElement
             FileNameText.Text = Path.GetFileNameWithoutExtension(FilePath);
     }
 
+    private void SetFileNameText(string name)
+    {
+        if (!string.IsNullOrEmpty(name))
+            FileNameText.Text = name;
+    }
+
     public void RestoreLoopState()
     {
         UpdateLoopIcon(IsLooping);
@@ -347,27 +578,6 @@ public partial class BlockElement
         _ = RunPythonScript();
     } 
     
-    private void Block_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        _dragStart = e.GetPosition(this);
-        _isDragging = false;
-    }
-
-    private void Block_PreviewMouseMove(object sender, MouseEventArgs e)
-    {
-        if (e.LeftButton != MouseButtonState.Pressed)
-            return;
-
-        var pos = e.GetPosition(this);
-        var diff = pos - _dragStart;
-
-        if (_isDragging || (!(Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance) &&
-                            !(Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance))) return;
-        _isDragging = true;
-
-        DragDrop.DoDragDrop(this, this, DragDropEffects.Move);
-    }
-
     private void CallLogViewer_Click(object sender, RoutedEventArgs e)
     {
         MainWindow.Instance?.ShowLogViewer(this);
@@ -425,8 +635,7 @@ public partial class BlockElement
 
             _activeProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _activeProcess.Start();
-            OnProcessStart?.Invoke(_activeProcess);
-
+            
             // Create JobObject if not created yet
             _jobManager.CreateJobObject();
             JobManager.AssignProcessToJobObject(_jobManager.JobHandle, _activeProcess.Handle);

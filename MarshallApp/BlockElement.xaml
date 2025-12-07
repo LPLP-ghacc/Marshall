@@ -3,8 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             mc:Ignorable="d">
-    <Border BorderThickness="1" BorderBrush="DarkGray" Padding="1" Margin="1">
+             mc:Ignorable="d" MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
+             MouseMove="UserControl_MouseMove"
+             MouseLeftButtonUp="UserControl_MouseLeftButtonUp" MouseLeave="BlockElement_OnMouseLeave" MouseEnter="BlockElement_OnMouseEnter">
+    <Border x:Name="MainBorder" BorderThickness="1" BorderBrush="DarkGray" Padding="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>

@@ -9,11 +9,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using MarshallApp.Controllers;
+using Color = System.Drawing.Color;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
+using Path = System.IO.Path;
 using Point = System.Windows.Point;
 
 namespace MarshallApp;
@@ -40,9 +44,9 @@ public partial class MainWindow : INotifyPropertyChanged
         DataContext = this;
         Instance = this;
         
-        MStackPanel.AllowDrop = true;
-        MStackPanel.DragOver += MStackPanel_DragOver;
-        MStackPanel.Drop += MStackPanel_Drop;
+        MainCanvas.AllowDrop = true;
+        MainCanvas.DragOver += MStackPanel_DragOver;
+        MainCanvas.Drop += MStackPanel_Drop;
 
         WallpaperControlInit();
 
@@ -54,6 +58,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
         ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
         ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
+        Loaded += (_, _) => DrawGrid();
 
         _appConfig = ConfigManager.Load();
         _limitSettings = new LimitSettings(10, 10);
@@ -153,34 +158,34 @@ public partial class MainWindow : INotifyPropertyChanged
     private void RemoveBlockElement(BlockElement element)
     {
         _blocks.Remove(element);
-        MStackPanel.Children.Remove(element);
-        UpdateLayoutGrid();
+        MainCanvas.Children.Remove(element);
+        //UpdateLayoutGrid();
         SaveAppConfig();
     }
 
-    private void UpdateLayoutGrid()
-    {
-        var total = MStackPanel.Children.Count;
-        if(total == 0) return;
-
-        var columns = (int)Math.Ceiling(Math.Sqrt(total));
-        var rows = (int)Math.Ceiling((double)total / columns);
-
-        MStackPanel.RowDefinitions.Clear();
-        MStackPanel.ColumnDefinitions.Clear();
-
-        for(var i = 0; i < rows; i++)
-            MStackPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        for(var j = 0; j < columns; j++)
-            MStackPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        for(var i = 0; i < total; i++)
-        {
-            var element = MStackPanel.Children[i];
-            Grid.SetRow(element, i / columns);
-            Grid.SetColumn(element, i % columns);
-        }
-    }
+    //private void UpdateLayoutGrid()
+    //{
+    //    var total = MainCanvas.Children.Count;
+    //    if(total == 0) return;
+//
+    //    var columns = (int)Math.Ceiling(Math.Sqrt(total));
+    //    var rows = (int)Math.Ceiling((double)total / columns);
+//
+    //    MainCanvas.RowDefinitions.Clear();
+    //    MainCanvas.ColumnDefinitions.Clear();
+//
+    //    for(var i = 0; i < rows; i++)
+    //        MainCanvas.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+    //    for(var j = 0; j < columns; j++)
+    //        MainCanvas.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+//
+    //    for(var i = 0; i < total; i++)
+    //    {
+    //        var element = MStackPanel.Children[i];
+    //        Grid.SetRow(element, i / columns);
+    //        Grid.SetColumn(element, i % columns);
+    //    }
+    //}
 
     #region Script Browser
     private void ScriptBrowser_OpenInNewPanel(string filePath)
@@ -191,10 +196,10 @@ public partial class MainWindow : INotifyPropertyChanged
         };
 
         _blocks.Add(block);
-        MStackPanel.Children.Add(block);
+        MainCanvas.Children.Add(block);
         _ = block.RunPythonScript();
 
-        UpdateLayoutGrid();
+        //UpdateLayoutGrid();
         SaveAppConfig();
     }
 
@@ -235,9 +240,7 @@ public partial class MainWindow : INotifyPropertyChanged
     private void AddBlock_Click(object sender, RoutedEventArgs e)
     {
         var block = new BlockElement(RemoveBlockElement, _limitSettings);
-        _blocks.Add(block);
-        MStackPanel.Children.Add(block);
-        UpdateLayoutGrid();
+        AddBlockElement(block);
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
@@ -301,7 +304,11 @@ public partial class MainWindow : INotifyPropertyChanged
                 PythonFilePath = block.FilePath,
                 IsLooping = block.IsLooping,
                 LoopIntervalSeconds = block.LoopInterval,
-                OutputFontSize = block.OutputFontSize
+                OutputFontSize = block.OutputFontSize,
+                X = Canvas.GetLeft(block),
+                Y = Canvas.GetTop(block),
+                WidthUnits = block.WidthUnits,
+                HeightUnits = block.HeightUnits
             });
         }
 
@@ -310,16 +317,26 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void LoadAllConfigs()
     {
-        foreach (var block in _appConfig.Blocks.Select(cfg => new BlockElement(RemoveBlockElement, _limitSettings)
-                 {
-                     FilePath = cfg.PythonFilePath,
-                     IsLooping = cfg.IsLooping,
-                     LoopInterval = cfg.LoopIntervalSeconds,
-                     OutputFontSize = cfg.OutputFontSize
-                 }))
+        foreach (var cfg in _appConfig.Blocks)
         {
+            var block = new BlockElement(RemoveBlockElement, _limitSettings)
+            {
+                FilePath = cfg.PythonFilePath,
+                IsLooping = cfg.IsLooping,
+                LoopInterval = cfg.LoopIntervalSeconds,
+                OutputFontSize = cfg.OutputFontSize,
+                WidthUnits = Math.Max(1, cfg.WidthUnits),
+                HeightUnits = Math.Max(1, cfg.HeightUnits)
+            };
+
+            block.Width = block.WidthUnits * BlockElement.GridSize;
+            block.Height = block.HeightUnits * BlockElement.GridSize;
+
             _blocks.Add(block);
-            MStackPanel.Children.Add(block);
+            MainCanvas.Children.Add(block);
+
+            Canvas.SetLeft(block, GridUtils.Snap(cfg.X));
+            Canvas.SetTop(block, GridUtils.Snap(cfg.Y));
 
             if(!string.IsNullOrEmpty(block.FilePath) && File.Exists(block.FilePath))
             {
@@ -328,8 +345,6 @@ public partial class MainWindow : INotifyPropertyChanged
             }
             block.RestoreLoopState();
         }
-
-        UpdateLayoutGrid();
     }
 
     private void LoadPanelState()
@@ -412,13 +427,11 @@ public partial class MainWindow : INotifyPropertyChanged
 
         var dragged = (BlockElement?)e.Data.GetData(typeof(BlockElement));
 
-        var mousePos = e.GetPosition(MStackPanel);
+        var mousePos = e.GetPosition(MainCanvas);
 
         var insertIndex = GetInsertIndex(mousePos);
 
         if (dragged != null) MoveBlockElement(dragged, insertIndex);
-
-        UpdateLayoutGrid();
 
         SaveAppConfig();
     }
@@ -428,10 +441,10 @@ public partial class MainWindow : INotifyPropertyChanged
         var bestIndex = 0;
         var bestDistance = double.MaxValue;
 
-        for (var i = 0; i < MStackPanel.Children.Count; i++)
+        for (var i = 0; i < MainCanvas.Children.Count; i++)
         {
-            var child = MStackPanel.Children[i];
-            var transform = child.TransformToAncestor(MStackPanel);
+            var child = MainCanvas.Children[i];
+            var transform = child.TransformToAncestor(MainCanvas);
             var rect = transform.TransformBounds(new Rect(0, 0, child.RenderSize.Width, child.RenderSize.Height));
 
             var centerY = rect.Top + rect.Height / 2;
@@ -451,18 +464,18 @@ public partial class MainWindow : INotifyPropertyChanged
     
     private void MoveBlockElement(BlockElement element, int newIndex)
     {
-        var oldIndex = MStackPanel.Children.IndexOf(element);
+        var oldIndex = MainCanvas.Children.IndexOf(element);
         if (oldIndex == -1) return;
 
         if (newIndex == oldIndex) return;
 
-        MStackPanel.Children.RemoveAt(oldIndex);
+        MainCanvas.Children.RemoveAt(oldIndex);
         _blocks.RemoveAt(oldIndex);
 
-        if (newIndex > MStackPanel.Children.Count)
-            newIndex = MStackPanel.Children.Count;
+        if (newIndex > MainCanvas.Children.Count)
+            newIndex = MainCanvas.Children.Count;
 
-        MStackPanel.Children.Insert(newIndex, element);
+        MainCanvas.Children.Insert(newIndex, element);
         _blocks.Insert(newIndex, element);
     }
 
@@ -485,5 +498,56 @@ public partial class MainWindow : INotifyPropertyChanged
     private void Minimize_OnClick_Click(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Minimized;
+    }
+
+    private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        
+    }
+    
+    private void AddBlockElement(BlockElement element)
+    {
+        element.Width = 500;
+        element.Height = 500;
+
+        Canvas.SetLeft(element, GridUtils.Snap(20));
+        Canvas.SetTop(element, GridUtils.Snap(20));
+
+        MainCanvas.Children.Add(element);
+
+        _blocks.Add(element);
+    }
+    
+    private void DrawGrid()
+    {
+        const double grid = BlockElement.GridSize;
+
+        for (double x = 0; x < MainCanvas.ActualWidth; x += grid)
+            MainCanvas.Children.Add(new Line
+            {
+                X1 = x, Y1 = 0, X2 = x, Y2 = MainCanvas.ActualHeight,
+                StrokeThickness = 0.5,
+                Stroke = new SolidColorBrush(Colors.Gray),
+                Opacity = 0.1,
+                IsHitTestVisible = false
+            });
+
+        for (double y = 0; y < MainCanvas.ActualHeight; y += grid)
+            MainCanvas.Children.Add(new Line
+            {
+                X1 = 0, Y1 = y, X2 = MainCanvas.ActualWidth, Y2 = y,
+                StrokeThickness = 0.5,
+                Stroke = new SolidColorBrush(Colors.Gray),
+                Opacity = 0.1,
+                IsHitTestVisible = false
+            });
+    }
+}
+
+public static class GridUtils
+{
+    public static double Snap(double value)
+    {
+        return Math.Round(value / BlockElement.GridSize) * BlockElement.GridSize;
     }
 }

@@ -195,7 +195,7 @@
         
         <GridSplitter Grid.Row="1" Grid.Column="1" Width="8" Background="#333" HorizontalAlignment="Stretch"/>
 
-        <Grid x:Name="MStackPanel" Grid.Row="1" Grid.Column="2"/>
+        <Canvas  x:Name="MainCanvas" Grid.Row="1" Grid.Column="2" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown"/>
 
         <GridSplitter Grid.Row="1" Grid.Column="3" Width="8" Background="{StaticResource AdditionalBrush}" HorizontalAlignment="Stretch"/>
 
