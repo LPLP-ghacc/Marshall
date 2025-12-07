@@ -22,6 +22,18 @@ using Point = System.Windows.Point;
 
 namespace MarshallApp;
 
+/*
+ * 1. сетка не отрисовывается до конца
+ * 2. на большом экране при передвижении панелей (слева справа) лагает
+ * 3. блок выходит за границы
+ * 4. когда блок большой (растянут) при передвижении он лагает
+ * 5. убрать выделении при наведении
+ * 6. крестик для удаления блока
+ * 7. контекстное меню для добавлении блока
+ * 8. проблема с растягиванием на весь экран
+ * 9. иерархия папок для скрипт браузера
+ */
+
 public partial class MainWindow : INotifyPropertyChanged
 {
     private NotifyIcon? _trayIcon;
@@ -58,7 +70,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
         ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
         ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
-        Loaded += (_, _) => DrawGrid();
+        //Loaded += (_, _) => DrawGrid();
 
         _appConfig = ConfigManager.Load();
         _limitSettings = new LimitSettings(10, 10);
@@ -159,33 +171,9 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         _blocks.Remove(element);
         MainCanvas.Children.Remove(element);
-        //UpdateLayoutGrid();
+
         SaveAppConfig();
     }
-
-    //private void UpdateLayoutGrid()
-    //{
-    //    var total = MainCanvas.Children.Count;
-    //    if(total == 0) return;
-//
-    //    var columns = (int)Math.Ceiling(Math.Sqrt(total));
-    //    var rows = (int)Math.Ceiling((double)total / columns);
-//
-    //    MainCanvas.RowDefinitions.Clear();
-    //    MainCanvas.ColumnDefinitions.Clear();
-//
-    //    for(var i = 0; i < rows; i++)
-    //        MainCanvas.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-    //    for(var j = 0; j < columns; j++)
-    //        MainCanvas.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-//
-    //    for(var i = 0; i < total; i++)
-    //    {
-    //        var element = MStackPanel.Children[i];
-    //        Grid.SetRow(element, i / columns);
-    //        Grid.SetColumn(element, i % columns);
-    //    }
-    //}
 
     #region Script Browser
     private void ScriptBrowser_OpenInNewPanel(string filePath)
@@ -198,8 +186,7 @@ public partial class MainWindow : INotifyPropertyChanged
         _blocks.Add(block);
         MainCanvas.Children.Add(block);
         _ = block.RunPythonScript();
-
-        //UpdateLayoutGrid();
+        
         SaveAppConfig();
     }
 

@@ -3,24 +3,39 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             mc:Ignorable="d" MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
+             mc:Ignorable="d" MinWidth="280" MinHeight="60"
+             MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
              MouseMove="UserControl_MouseMove"
-             MouseLeftButtonUp="UserControl_MouseLeftButtonUp" MouseLeave="BlockElement_OnMouseLeave" MouseEnter="BlockElement_OnMouseEnter">
-    <Border x:Name="MainBorder" BorderThickness="1" BorderBrush="DarkGray" Padding="1">
+             MouseLeftButtonUp="UserControl_MouseLeftButtonUp" 
+             MouseLeave="BlockElement_OnMouseLeave" 
+             MouseEnter="BlockElement_OnMouseEnter">
+    <Border x:Name="MainBorder" BorderBrush="#666" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
-            <Button HorizontalAlignment="Right" Width="20" Height="20" Style="{StaticResource FlatButtonStyle}" Click="CallLogViewer_Click">
-                <Path Width="16" Height="16" Stretch="Uniform" Stroke="#CCFFFFFF" StrokeThickness="1.5" StrokeLineJoin="Round" Fill="Transparent"
-                      Data="M2,2 L14,2 L14,14 L2,14 Z
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Width="20" Height="20" Style="{StaticResource FlatButtonStyle}" Click="CallLogViewer_Click">
+                    <Path Width="16" Height="16" Stretch="Uniform" Stroke="#CCFFFFFF" StrokeThickness="1.5" StrokeLineJoin="Round" Fill="Transparent"
+                          Data="M2,2 L14,2 L14,14 L2,14 Z
                             M4,4 L12,4
                             M4,7 L12,7
                             M4,10 L12,10
                             M4,13 L8,13"/>
-            </Button>
+                </Button>
+            
+                <Button x:Name="Exit" Width="20" Height="20" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Close_Click">
+                    <Path Data="M14.5,13.5 L1.5,0.5 M1.5,13.5 L14.5,0.5" 
+                          Stroke="#CCFFFFFF" 
+                          StrokeThickness="2.3" 
+                          StrokeLineJoin="Round"
+                          Stretch="Uniform"
+                          Width="14" Height="14"/>
+                </Button>
+            </StackPanel>
+
             <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.Row="0">
                 <StackPanel Orientation="Horizontal">
                     <Grid HorizontalAlignment="Left">
@@ -33,18 +48,7 @@
                                        Foreground="Lime"
                                        Margin="5,0,0,0"
                                        FontWeight="Bold" ToolTip=".py filename"/>
-                            <Button x:Name="EditBlockButton"
-                                    Content="Edit"
-                                    Style="{StaticResource FlatButtonStyle}"
-                                    Click="EditButton_Click">
-                                <Button.ContextMenu>
-                                    <ContextMenu x:Name="EditMenu">
-                                        <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>
-                                        <Separator/>
-                                        <MenuItem Header="Delete block" Click="DeleteButton_Click"/>
-                                    </ContextMenu>
-                                </Button.ContextMenu>
-                            </Button>
+
                             <Button x:Name="CopyButton"
                                     Style="{StaticResource FlatImageButtonStyle}"
                                     Click="CopyButton_Click" Width="20" Height="20" ToolTip="Copy block output">
@@ -83,14 +87,29 @@
                     <TextBlock x:Name="OutputText"
                                TextWrapping="Wrap"
                                Foreground="{StaticResource PrimaryTextBrush}"
-                               FontFamily="Consolas" PreviewMouseWheel="OutputText_MouseWheel" Loaded="OnOutputLoaded"/>
+                               FontFamily="Consolas" 
+                               PreviewMouseWheel="OutputText_MouseWheel" Loaded="OnOutputLoaded" MouseRightButtonDown="OutputText_OnMouseRightButtonDown"
+                               MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
+                               MouseMove="UserControl_MouseMove"
+                               MouseLeftButtonUp="UserControl_MouseLeftButtonUp" 
+                               MouseLeave="BlockElement_OnMouseLeave" 
+                               MouseEnter="BlockElement_OnMouseEnter">
+                        <TextBlock.ContextMenu>
+                            <ContextMenu x:Name="Menu">
+                                <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Delete block" Click="DeleteButton_Click"/>
+                            </ContextMenu>
+                        </TextBlock.ContextMenu>
+                    </TextBlock>
                 </ScrollViewer>
                 <TextBlock Grid.Row="0" x:Name="CodeViewer"
                            TextWrapping="Wrap"
                            Foreground="{StaticResource PrimaryTextBrush}"
                            Opacity="0.02"
                            FontFamily="Consolas"
-                           IsHitTestVisible="False"/>
+                           IsHitTestVisible="False">
+                </TextBlock>
 
                 <TextBox x:Name="UserInputBox"
                          Grid.Row="1"
@@ -102,7 +121,9 @@
                          Padding="4"
                          Margin="0,2,0,0"
                          BorderBrush="Gray"
-                         BorderThickness="1"/>
+                         BorderThickness="1">
+
+                </TextBox>
             </Grid>
         </Grid>
     </Border>

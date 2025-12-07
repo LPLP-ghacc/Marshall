@@ -1,10 +1,14 @@
 {
   "Blocks": [
     {
-      "PythonFilePath": null,
+      "PythonFilePath": "",
       "IsLooping": false,
-      "LoopIntervalSeconds": 5,
-      "OutputFontSize": 14
+      "LoopIntervalSeconds": 60,
+      "OutputFontSize": 23,
+      "X": 585,
+      "Y": 15,
+      "WidthUnits": 31,
+      "HeightUnits": 19
     }
   ],
   "PanelState": {
@@ -27,6 +31,6 @@
       "GridUnitType": 1
     }
   },
-  "WindowWidth": 862,
-  "WindowHeight": 494
+  "WindowWidth": 1746,
+  "WindowHeight": 875
 }

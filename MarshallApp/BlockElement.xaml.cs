@@ -231,12 +231,12 @@ public partial class BlockElement
     
     private void BlockElement_OnMouseEnter(object sender, MouseEventArgs e)
     {
-        MainBorder.BorderThickness = new Thickness(2);
+        //MainBorder.BorderThickness = new Thickness(2);
     }
     
     private void BlockElement_OnMouseLeave(object sender, MouseEventArgs e)
     {
-        MainBorder.BorderThickness = new Thickness(1);
+        //MainBorder.BorderThickness = new Thickness(1);
     }
 }
 
@@ -387,13 +387,19 @@ public partial class BlockElement
         StopLoop();
         _removeCallback?.Invoke(this);
     }
-
-    private void EditButton_Click(object sender, RoutedEventArgs e)
+    
+    private void Close_Click(object sender, RoutedEventArgs e)
     {
-        if (EditBlockButton.ContextMenu == null) return;
-        EditBlockButton.ContextMenu.PlacementTarget = EditBlockButton;
-        EditBlockButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        EditBlockButton.ContextMenu.IsOpen = true;
+        StopLoop();
+        _removeCallback?.Invoke(this);
+    }
+    
+    private void OutputText_OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (Menu.ContextMenu == null) return;
+        Menu.ContextMenu.PlacementTarget = OutputText;
+        Menu.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        Menu.ContextMenu.IsOpen = true;
     }
 
     private void SelectPythonFile_Click(object sender, RoutedEventArgs e)
