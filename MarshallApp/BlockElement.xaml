@@ -95,7 +95,7 @@
                                MouseLeave="BlockElement_OnMouseLeave" 
                                MouseEnter="BlockElement_OnMouseEnter">
                         <TextBlock.ContextMenu>
-                            <ContextMenu x:Name="Menu">
+                            <ContextMenu x:Name="Menu" Style="{StaticResource DarkContextMenuStyle}">
                                 <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>
                                 <Separator/>
                                 <MenuItem Header="Delete block" Click="DeleteButton_Click"/>

@@ -344,7 +344,7 @@
         </Style>
         
         
-        
+        <SolidColorBrush x:Key="SidebarButtonActiveBackground" Color="#22FFFFFF"/>
         <Color x:Key="PrimaryColor">#111</Color>
         <Brush x:Key="PrimaryBrush">#111</Brush>
         <Color x:Key="PanelsColor">#1E1E1E</Color>

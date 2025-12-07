@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -13,6 +12,10 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using MarshallApp.Controllers;
+using Application = System.Windows.Application;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
@@ -24,37 +27,34 @@ namespace MarshallApp;
 
 /*
  * 1. сетка не отрисовывается до конца
- * 2. на большом экране при передвижении панелей (слева справа) лагает
  * 3. блок выходит за границы
- * 4. когда блок большой (растянут) при передвижении он лагает
- * 5. убрать выделении при наведении
- * 6. крестик для удаления блока
- * 7. контекстное меню для добавлении блока
- * 8. проблема с растягиванием на весь экран
+ * 4. когда блок большой (растянут) при передвижении он лагае
  * 9. иерархия папок для скрипт браузера
  */
 
 public partial class MainWindow : INotifyPropertyChanged
 {
     private NotifyIcon? _trayIcon;
-    
-    private bool _isRestoring;
     private readonly AppConfig _appConfig;
     private readonly List<BlockElement> _blocks = [];
     private WallpaperController? _wallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
     private readonly LimitSettings _limitSettings;
     public event PropertyChangedEventHandler? PropertyChanged;
-    public void OnPropertyChanged([CallerMemberName] string? name = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    
     public static MainWindow? Instance { get; private set; }
+
+    private readonly List<UIElement> _mainFieldElements = [];
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
         Instance = this;
+        
+        _mainFieldElements.Add(ScriptBrowser);
+        _mainFieldElements.Add(MainCanvas);
+        _mainFieldElements.Add(CodeEditor);
+        OpenUiElement(MainCanvas, MainCanvasShowButton);
         
         MainCanvas.AllowDrop = true;
         MainCanvas.DragOver += MStackPanel_DragOver;
@@ -67,21 +67,42 @@ public partial class MainWindow : INotifyPropertyChanged
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
         };
-
         ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
         ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
-        //Loaded += (_, _) => DrawGrid();
 
         _appConfig = ConfigManager.Load();
-        _limitSettings = new LimitSettings(10, 10);
+        _limitSettings = new LimitSettings(10, 300);
 
         Width = _appConfig.WindowWidth;
         Height = _appConfig.WindowHeight;
 
-        LoadPanelState();
         LoadAllConfigs();
         NewScript();
         InitializeTray();
+    }
+
+    private void OpenUiElement(UIElement? obj, object sender)
+    {
+        var brush = ((Brush?)Application.Current.FindResource("SidebarButtonActiveBackground"))! ?? throw new InvalidOperationException(); // Господи, прости
+        
+        foreach (var element in _mainFieldElements)
+        {
+            element.Visibility = element != obj ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        var buttons = new List<Button>()
+        {
+            CodeEditorShowButton,
+            ScriptBrowserShowButton,
+            MainCanvasShowButton
+        };
+
+        foreach (var button in buttons)
+        {
+            var border = VisualTreeHelper.GetParent(button) as Border;
+
+            border?.Background = button != sender ? Brushes.Transparent : brush;
+        }
     }
     
     private void InitializeTray()
@@ -164,7 +185,6 @@ public partial class MainWindow : INotifyPropertyChanged
     private void NewScript()
     {
         CodeEditor.NewScript();
-        CodeEditor.Visibility = Visibility.Visible;
     }
 
     private void RemoveBlockElement(BlockElement element)
@@ -193,37 +213,32 @@ public partial class MainWindow : INotifyPropertyChanged
     private void ScriptBrowser_ScriptSelected(string? filePath)
     {
         if (filePath != null) CodeEditor.LoadScript(filePath);
-        CodeEditor.Visibility = Visibility.Visible;
     }
     #endregion
 
     #region Top Panel Menu
-    private void AddButton_Click(object sender, RoutedEventArgs e)
+    
+    private void MainCanvas_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (AddButton.ContextMenu == null) return;
-        AddButton.ContextMenu.PlacementTarget = AddButton;
-        AddButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        AddButton.ContextMenu.IsOpen = true;
+        if (e.OriginalSource is DependencyObject source)
+        {
+            var elementUnderMouse = source.FindVisualAncestor<BlockElement>();
+            
+            if (elementUnderMouse != null)
+            {
+                return;
+            }
+        }
+        
+        if (MainCanvas.ContextMenu != null)
+        {
+            MainCanvas.ContextMenu.PlacementTarget = MainCanvas;
+            MainCanvas.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            MainCanvas.ContextMenu.IsOpen = true;
+        }
+        e.Handled = true;
     }
     
-    private void HelpButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (HelpButton.ContextMenu == null) return;
-        HelpButton.ContextMenu.PlacementTarget = AddButton;
-        HelpButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        HelpButton.ContextMenu.IsOpen = true;
-    }
-
-    private void WindowButton_Click(object sender, RoutedEventArgs e)
-    {
-        Console.WriteLine($"{LeftCol.Width}, {LeftPanelVisible}");
-        
-        if (WindowButton.ContextMenu == null) return;
-        WindowButton.ContextMenu.PlacementTarget = WindowButton;
-        WindowButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        WindowButton.ContextMenu.IsOpen = true;
-    }
-
     private void AddBlock_Click(object sender, RoutedEventArgs e)
     {
         var block = new BlockElement(RemoveBlockElement, _limitSettings);
@@ -238,40 +253,16 @@ public partial class MainWindow : INotifyPropertyChanged
         var settings = new Settings();
         settings.Show();
     }
+    #endregion
 
-    private void ScriptBrowserHideChecker_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_isRestoring) return;
-        LeftCol.Width = new GridLength(LeftCol.MaxWidth);
-    }
+    #region LeftPanel
+    
+    private void MainCanvasShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(MainCanvas, sender);
 
-    private void ScriptBrowserHideChecker_Unchecked(object sender, RoutedEventArgs e)
-    {
-        if (_isRestoring) return;
-        LeftCol.Width = new GridLength(0);
-    }
+    private void ScriptBrowserShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(ScriptBrowser, sender);
 
-    private void ScriptEditorHideChecker_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_isRestoring) return;
-        try
-        {
-            RightCol.Width = new GridLength(RightCol.MaxWidth);
-        }
-        catch
-        {
-            RightCol.Width = new GridLength(500);
-        }
-    }
+    private void CodeEditorShowButton_OnClick(object sender, RoutedEventArgs e)=> OpenUiElement(CodeEditor, sender);
 
-    private void ScriptEditorHideChecker_Unchecked(object sender, RoutedEventArgs e)
-    {
-        if (_isRestoring) return;
-        RightCol.Width = new GridLength(0);
-    }
-
-    public bool LeftPanelVisible => LeftCol.Width != new GridLength(0);
-    public bool RightPanelVisible => RightCol.Width != new GridLength(0);
     #endregion
 
     #region LoadSaving things
@@ -280,8 +271,6 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         _appConfig.WindowWidth = Width;
         _appConfig.WindowHeight = Height;
-
-        _appConfig.PanelState = new PanelState(LeftCol.Width, RightCol.Width);
         
         _appConfig.Blocks.Clear();
         foreach(var block in _blocks)
@@ -333,27 +322,6 @@ public partial class MainWindow : INotifyPropertyChanged
             block.RestoreLoopState();
         }
     }
-
-    private void LoadPanelState()
-    {
-        _isRestoring = true;
-
-        if (_appConfig.PanelState != null)
-        {
-            LeftCol.Width = _appConfig.PanelState.Left;
-
-            ScriptBrowser.Visibility = Visibility.Visible;
-            ScriptBrowser.InvalidateMeasure();
-            ScriptBrowser.UpdateLayout();
-
-            RightCol.Width = _appConfig.PanelState.Right;
-        }
-
-        ScriptBrowserHideChecker.IsChecked = LeftCol.Width.Value > 0;
-        ScriptEditorHideChecker.IsChecked = RightCol.Width.Value > 0;
-
-        _isRestoring = false;
-    }
     
     protected override void OnClosing(CancelEventArgs e)
     {
@@ -367,17 +335,22 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void Fullscreen_Click(object sender, RoutedEventArgs e)
     {
-        if (WindowState == WindowState.Maximized && WindowStyle == WindowStyle.None)
+        if (WindowState == WindowState.Maximized)
         {
             WindowState = WindowState.Normal;
             WindowStyle = WindowStyle.SingleBorderWindow;
+            ResizeMode = ResizeMode.CanResizeWithGrip;
             FullscreenEnter.Visibility = Visibility.Visible;
             FullscreenExit.Visibility = Visibility.Collapsed;
         }
         else
         {
-            WindowState = WindowState.Maximized;
             WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            MaxWidth = SystemParameters.WorkArea.Width;
+            MaxHeight = SystemParameters.WorkArea.Height;
+            WindowState = WindowState.Maximized;
+
             FullscreenEnter.Visibility = Visibility.Collapsed;
             FullscreenExit.Visibility = Visibility.Visible;
         }
@@ -482,15 +455,7 @@ public partial class MainWindow : INotifyPropertyChanged
         _wallpaperTimer.Start();
     }
 
-    private void Minimize_OnClick_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
-    private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        
-    }
+    private void Minimize_OnClick_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     
     private void AddBlockElement(BlockElement element)
     {
@@ -503,31 +468,6 @@ public partial class MainWindow : INotifyPropertyChanged
         MainCanvas.Children.Add(element);
 
         _blocks.Add(element);
-    }
-    
-    private void DrawGrid()
-    {
-        const double grid = BlockElement.GridSize;
-
-        for (double x = 0; x < MainCanvas.ActualWidth; x += grid)
-            MainCanvas.Children.Add(new Line
-            {
-                X1 = x, Y1 = 0, X2 = x, Y2 = MainCanvas.ActualHeight,
-                StrokeThickness = 0.5,
-                Stroke = new SolidColorBrush(Colors.Gray),
-                Opacity = 0.1,
-                IsHitTestVisible = false
-            });
-
-        for (double y = 0; y < MainCanvas.ActualHeight; y += grid)
-            MainCanvas.Children.Add(new Line
-            {
-                X1 = 0, Y1 = y, X2 = MainCanvas.ActualWidth, Y2 = y,
-                StrokeThickness = 0.5,
-                Stroke = new SolidColorBrush(Colors.Gray),
-                Opacity = 0.1,
-                IsHitTestVisible = false
-            });
     }
 }
 
