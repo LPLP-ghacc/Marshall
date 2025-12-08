@@ -6,14 +6,54 @@
         xmlns:local="clr-namespace:MarshallApp"
         mc:Ignorable="d"
         SizeToContent="WidthAndHeight"
-        Title="Script Output" Height="500" Width="600" MinWidth="500">
-    <Grid Background="{StaticResource PanelsBrush2}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <TextBlock x:Name="Output"
-                       TextWrapping="Wrap"
-                       Foreground="{StaticResource PrimaryTextBrush}"
-                       FontFamily="Consolas"
-                       FontSize="14"/>
-        </ScrollViewer>
+        WindowStyle="None"
+        Title="Script Output" MinWidth="300" MinHeight="100" MaxHeight="900" MaxWidth="1800" Width="300" Height="300">
+    <Grid x:Name="RootGrid">
+        <Grid.Background>  
+            <ImageBrush x:Name="RootImageBrush" Stretch="UniformToFill"/>     
+        </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" MouseLeftButtonDown="UIElement_OnMouseLeftButtonDown">
+            <Border x:Name="Top" Grid.ColumnSpan="5" >
+            <Border.Effect>
+                <BlurEffect Radius="1" RenderingBias="Performance"/>
+            </Border.Effect>
+            <Grid>
+                <StackPanel Orientation="Horizontal" Background="{StaticResource AdditionalBrush2}">
+                    <TextBlock x:Name="Log" 
+                               Text="SAMPLE TEXT"
+                               Foreground="{StaticResource PrimaryTextBrush}" 
+                               FontSize="13" 
+                               FontWeight="SemiBold"
+                               Margin="5"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <Button x:Name="Exit" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Close_Click">
+                        <Path Data="M14.5,13.5 L1.5,0.5 M1.5,13.5 L14.5,0.5" 
+                              Stroke="#CCFFFFFF" 
+                              StrokeThickness="2.3" 
+                              StrokeLineJoin="Round"
+                              Stretch="Uniform"
+                              Width="14" Height="14"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        </Grid>
+        <Grid Grid.Row="1" Background="{StaticResource PanelsBrush2}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBox x:Name="Output"
+                         TextWrapping="Wrap"
+                         Style="{StaticResource FlatTextBoxStyle}"
+                         Foreground="{StaticResource PrimaryTextBrush}"
+                         FontFamily="Consolas"
+                         FontSize="14"
+                         IsReadOnly="True"/>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>

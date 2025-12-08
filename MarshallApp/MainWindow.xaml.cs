@@ -177,7 +177,10 @@ public partial class MainWindow : INotifyPropertyChanged
         var window = new LogViewer(
             name,
             block.OutputText.Text
-        );
+        )
+        {
+            Owner = this
+        };
 
         window.Show();
     }

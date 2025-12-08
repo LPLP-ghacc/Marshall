@@ -79,6 +79,9 @@
                                FontSize="13" 
                                FontWeight="SemiBold"
                                Margin="5"/>
+                    <Button Style="{StaticResource FlatButtonStyle}" Content="SAMPLE">
+                        
+                    </Button>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
                     <Button x:Name="Minimize" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Minimize_OnClick_Click">
