@@ -35,11 +35,12 @@ namespace MarshallApp;
 public partial class MainWindow : INotifyPropertyChanged
 {
     private NotifyIcon? _trayIcon;
-    private readonly AppConfig _appConfig;
-    private readonly List<BlockElement> _blocks = [];
+    public readonly List<BlockElement> Blocks = [];
     private WallpaperController? _wallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
-    private readonly LimitSettings _limitSettings;
+    private readonly DispatcherTimer _loggerTimer = new();
+    public readonly LimitSettings LimitSettings;
+    public Project? CurrentProject { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
     public static MainWindow? Instance { get; private set; }
 
@@ -69,18 +70,18 @@ public partial class MainWindow : INotifyPropertyChanged
         };
         ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
         ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
+        
+        LimitSettings = new LimitSettings(10, 300);
 
-        _appConfig = ConfigManager.Load();
-        _limitSettings = new LimitSettings(10, 300);
-
-        Width = _appConfig.WindowWidth;
-        Height = _appConfig.WindowHeight;
-
-        LoadAllConfigs();
+        ConfigManager.LoadAllConfigs();
+        
         NewScript();
         InitializeTray();
-    }
+        InitLoggerTimer();
 
+        "Hello World!".Log();
+    }
+    
     private void OpenUiElement(UIElement? obj, object sender)
     {
         var brush = ((Brush?)Application.Current.FindResource("SidebarButtonActiveBackground"))! ?? throw new InvalidOperationException(); // Господи, прости
@@ -129,13 +130,13 @@ public partial class MainWindow : INotifyPropertyChanged
         menu.Items.Add("Running scripts:").Enabled = false;
         menu.Items.Add(new ToolStripSeparator());
 
-        if (_blocks.Count == 0)
+        if (Blocks.Count == 0)
         {
             menu.Items.Add("(no scripts)").Enabled = false;
         }
         else
         {
-            foreach (var block in _blocks)
+            foreach (var block in Blocks)
             {
                 var name = string.IsNullOrEmpty(block.FilePath)
                     ? "(unnamed)"
@@ -159,7 +160,7 @@ public partial class MainWindow : INotifyPropertyChanged
         var exit = new ToolStripMenuItem("Exit");
         exit.Click += (_, _) => 
         {
-            SaveAppConfig();
+            ConfigManager.SaveAppConfig();
             Environment.Exit(0);
         };
 
@@ -190,27 +191,27 @@ public partial class MainWindow : INotifyPropertyChanged
         CodeEditor.NewScript();
     }
 
-    private void RemoveBlockElement(BlockElement element)
+    public void RemoveBlockElement(BlockElement element)
     {
-        _blocks.Remove(element);
+        Blocks.Remove(element);
         MainCanvas.Children.Remove(element);
 
-        SaveAppConfig();
+        ConfigManager.SaveAppConfig();
     }
 
     #region Script Browser
     private void ScriptBrowser_OpenInNewPanel(string filePath)
     {
-        var block = new BlockElement(RemoveBlockElement, _limitSettings)
+        var block = new BlockElement(RemoveBlockElement, LimitSettings)
         {
             FilePath = filePath
         };
 
-        _blocks.Add(block);
+        Blocks.Add(block);
         MainCanvas.Children.Add(block);
         _ = block.RunPythonScript();
         
-        SaveAppConfig();
+        ConfigManager.SaveAppConfig();
     }
 
     private void ScriptBrowser_ScriptSelected(string? filePath)
@@ -242,9 +243,19 @@ public partial class MainWindow : INotifyPropertyChanged
         e.Handled = true;
     }
     
+    private void ProjectButton_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (ProjectButton.ContextMenu == null) return;
+        ProjectButton.ContextMenu.PlacementTarget = ProjectButton;
+        ProjectButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        ProjectButton.ContextMenu.IsOpen = true;
+        
+        e.Handled = true;
+    }
+    
     private void AddBlock_Click(object sender, RoutedEventArgs e)
     {
-        var block = new BlockElement(RemoveBlockElement, _limitSettings);
+        var block = new BlockElement(RemoveBlockElement, LimitSettings);
         AddBlockElement(block);
     }
 
@@ -269,67 +280,11 @@ public partial class MainWindow : INotifyPropertyChanged
     #endregion
 
     #region LoadSaving things
-
-    private void SaveAppConfig()
-    {
-        _appConfig.WindowWidth = Width;
-        _appConfig.WindowHeight = Height;
-        
-        _appConfig.Blocks.Clear();
-        foreach(var block in _blocks)
-        {
-            _appConfig.Blocks.Add(new BlockConfig
-            {
-                PythonFilePath = block.FilePath,
-                IsLooping = block.IsLooping,
-                LoopIntervalSeconds = block.LoopInterval,
-                OutputFontSize = block.OutputFontSize,
-                X = Canvas.GetLeft(block),
-                Y = Canvas.GetTop(block),
-                WidthUnits = block.WidthUnits,
-                HeightUnits = block.HeightUnits
-            });
-        }
-
-        ConfigManager.Save(_appConfig);
-    }
-
-    private void LoadAllConfigs()
-    {
-        foreach (var cfg in _appConfig.Blocks)
-        {
-            var block = new BlockElement(RemoveBlockElement, _limitSettings)
-            {
-                FilePath = cfg.PythonFilePath,
-                IsLooping = cfg.IsLooping,
-                LoopInterval = cfg.LoopIntervalSeconds,
-                OutputFontSize = cfg.OutputFontSize,
-                WidthUnits = Math.Max(1, cfg.WidthUnits),
-                HeightUnits = Math.Max(1, cfg.HeightUnits)
-            };
-
-            block.Width = block.WidthUnits * BlockElement.GridSize;
-            block.Height = block.HeightUnits * BlockElement.GridSize;
-
-            _blocks.Add(block);
-            MainCanvas.Children.Add(block);
-
-            Canvas.SetLeft(block, GridUtils.Snap(cfg.X));
-            Canvas.SetTop(block, GridUtils.Snap(cfg.Y));
-
-            if(!string.IsNullOrEmpty(block.FilePath) && File.Exists(block.FilePath))
-            {
-                block.SetFileNameText();
-                _ = block.RunPythonScript();
-            }
-            block.RestoreLoopState();
-        }
-    }
     
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
-        SaveAppConfig();
+        ConfigManager.SaveAppConfig();
     }
 
     #endregion
@@ -361,7 +316,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        SaveAppConfig();
+        ConfigManager.SaveAppConfig();
         Environment.Exit(0);
     }
 
@@ -396,7 +351,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
         if (dragged != null) MoveBlockElement(dragged, insertIndex);
 
-        SaveAppConfig();
+        ConfigManager.SaveAppConfig();
     }
     
     private int GetInsertIndex(Point mousePos)
@@ -433,13 +388,13 @@ public partial class MainWindow : INotifyPropertyChanged
         if (newIndex == oldIndex) return;
 
         MainCanvas.Children.RemoveAt(oldIndex);
-        _blocks.RemoveAt(oldIndex);
+        Blocks.RemoveAt(oldIndex);
 
         if (newIndex > MainCanvas.Children.Count)
             newIndex = MainCanvas.Children.Count;
 
         MainCanvas.Children.Insert(newIndex, element);
-        _blocks.Insert(newIndex, element);
+        Blocks.Insert(newIndex, element);
     }
 
     #endregion
@@ -470,7 +425,63 @@ public partial class MainWindow : INotifyPropertyChanged
 
         MainCanvas.Children.Add(element);
 
-        _blocks.Add(element);
+        Blocks.Add(element);
+    }
+
+    private void NewProjectButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var window = new ProjectCreationWindow
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() != true) return;
+        CurrentProject = window.ResultProject;
+        SetProjectName(CurrentProject?.ProjectName!);
+        ConfigManager.SaveAppConfig();
+        ClearBlocks();
+
+    }
+
+    private void OpenProject_OnClick(object sender, RoutedEventArgs e)
+    {
+        var window = new ProjectOpenWindow(ConfigManager.RecentProjects)
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() != true) return;
+        CurrentProject = window.ResultProject;
+        SetProjectName(CurrentProject?.ProjectName!);
+        if (CurrentProject != null) ConfigManager.LoadBlocksFromProject(CurrentProject);
+    }
+    
+    public void ClearBlocks()
+    {
+        foreach (var block in Blocks.ToList())
+            MainCanvas.Children.Remove(block);
+
+        Blocks.Clear();
+    }
+    
+    public void SetProjectName(string projectName) => ProjectButton.Content = projectName;
+    
+    public void Log(string message)
+    {
+        Console.WriteLine(message);
+        //message = message.Length > 90 ? message.Remove(90, message.Length) : message;
+        Logger.Text = message;
+        _loggerTimer.Start();
+    }
+
+    private void InitLoggerTimer()
+    {
+        _loggerTimer.Interval = new TimeSpan(0, 0, 5);
+        _loggerTimer.Tick += (_, _) =>
+        {
+            Logger.Text = string.Empty;
+            _loggerTimer.Stop();
+        };
     }
 }
 

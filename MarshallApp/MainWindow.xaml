@@ -79,11 +79,25 @@
                                FontSize="13" 
                                FontWeight="SemiBold"
                                Margin="5"/>
-                    <Button Style="{StaticResource FlatButtonStyle}" Content="SAMPLE">
-                        
+                    <Button x:Name="ProjectButton" Margin="4" PreviewMouseLeftButtonDown="ProjectButton_OnPreviewMouseLeftButtonDown" Background="#11FFFFFF" Style="{StaticResource FlatButtonStyle}" Content="">
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="ProjectContextMenu" 
+                                         Style="{StaticResource DarkContextMenuStyle}"
+                                         PlacementTarget="{Binding ElementName=WindowButton}"
+                                         StaysOpen="False">
+                                <MenuItem x:Name="NewProjectButton" Header="New Project..."
+                                          Click="NewProjectButton_OnClick"
+                                          Style="{StaticResource DarkMenuItemStyle}"/>
+                                <MenuItem  x:Name="OpenProject" Header="Open Project..."
+                                           Click="OpenProject_OnClick"
+                                           Style="{StaticResource DarkMenuItemStyle}"/>
+                                <Separator/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
                     </Button>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <TextBlock x:Name="Logger" Margin="5,5,100,5" VerticalAlignment="Center" Foreground="#7100EA0A"/>
                     <Button x:Name="Minimize" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Minimize_OnClick_Click">
                         <Grid>
                             <Line X1="0" Y1="0" X2="15" Y2="0" Stroke="{StaticResource PrimaryTextBrush}" />

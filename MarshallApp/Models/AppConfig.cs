@@ -1,9 +1,13 @@
 ﻿namespace MarshallApp.Models
 {
-    public class AppConfig
+    public class AppConfig(double windowHeight, double windowWidth, List<string> recentProjects, string? lastProjectPath)
     {
-        public List<BlockConfig> Blocks { get; init; } = [];
-        public double WindowWidth { get; set; } = 1200;
-        public double WindowHeight { get; set; } = 800;
+        public string? LastProjectPath { get; set; } = lastProjectPath;
+        public double WindowWidth { get; set; } = windowWidth;
+        public double WindowHeight { get; set; } = windowHeight;
+        
+        public List<string> RecentProjects { get; init; } = recentProjects;
+
+        public static AppConfig Default => new(1200, 800, [], string.Empty);
     }
 }
