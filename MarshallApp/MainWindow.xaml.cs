@@ -19,6 +19,8 @@ using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
+using Menu = System.Windows.Controls.Menu;
+using MenuItem = System.Windows.Controls.MenuItem;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using Path = System.IO.Path;
 using Point = System.Windows.Point;
@@ -68,8 +70,6 @@ public partial class MainWindow : INotifyPropertyChanged
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
         };
-        ScriptBrowser.ScriptSelected += ScriptBrowser_ScriptSelected;
-        ScriptBrowser.ScriptOpenInNewPanel += ScriptBrowser_OpenInNewPanel;
         
         LimitSettings = new LimitSettings(10, 300);
 
@@ -79,10 +79,11 @@ public partial class MainWindow : INotifyPropertyChanged
         InitializeTray();
         InitLoggerTimer();
 
+        // Welcome to the home of the mentally ill
         "Hello World!".Log();
     }
-    
-    private void OpenUiElement(UIElement? obj, object sender)
+
+    public void OpenUiElement(UIElement? obj, object sender)
     {
         var brush = ((Brush?)Application.Current.FindResource("SidebarButtonActiveBackground"))! ?? throw new InvalidOperationException(); // Господи, прости
         
@@ -208,10 +209,51 @@ public partial class MainWindow : INotifyPropertyChanged
         };
 
         Blocks.Add(block);
+        
+        
+        var sizeW = block.Width;
+        var sizeH = block.Height;
+
+        var pos = FindFreePosition(sizeW, sizeH);
+
+        Canvas.SetLeft(block, pos.X);
+        Canvas.SetTop(block, pos.Y);
+        
         MainCanvas.Children.Add(block);
         _ = block.RunPythonScript();
         
         ConfigManager.SaveAppConfig();
+    }
+    
+    private Point FindFreePosition(double width, double height)
+    {
+        const double step = BlockElement.GridSize;
+
+        for (double y = 0; y < MainCanvas.Height - height; y += step)
+        {
+            for (double x = 0; x < MainCanvas.Width - width; x += step)
+            {
+                var area = new Rect(x, y, width, height);
+                var intersects = false;
+
+                foreach (UIElement child in MainCanvas.Children)
+                {
+                    if (child is not BlockElement b) continue;
+                    var bx = Canvas.GetLeft(b);
+                    var by = Canvas.GetTop(b);
+                    var rect = new Rect(bx, by, b.Width, b.Height);
+
+                    if (!area.IntersectsWith(rect)) continue;
+                    intersects = true;
+                    break;
+                }
+
+                if (!intersects)
+                    return new Point(x, y);
+            }
+        }
+
+        return new Point(0, 0); // fallback
     }
 
     private void ScriptBrowser_ScriptSelected(string? filePath)
@@ -482,6 +524,61 @@ public partial class MainWindow : INotifyPropertyChanged
             Logger.Text = string.Empty;
             _loggerTimer.Stop();
         };
+    }
+
+    private void ProjectContextMenu_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        var menu = ProjectContextMenu;
+        var separatorIndex = -1;
+        for (var i = 0; i < menu.Items.Count; i++)
+        {
+            if (menu.Items[i] is not Separator) continue;
+            separatorIndex = i;
+            break;
+        }
+
+        if (separatorIndex == -1)
+        {
+            separatorIndex = menu.Items.Count - 1;
+        }
+        
+        while (menu.Items.Count > separatorIndex + 1)
+        {
+            menu.Items.RemoveAt(separatorIndex + 1);
+        }
+        
+        ConfigManager.RecentProjects.ForEach(project =>
+        {
+            var fileName = Path.GetFileNameWithoutExtension(project);
+            
+            var selector = new MenuItem()
+            {
+                Header = fileName,
+                ToolTip = project,
+                Style = ((Style?)Application.Current.Resources["DarkMenuItemStyle"] ?? throw new InvalidOperationException())!
+            };
+            selector.Click += (o, _) =>
+            {
+                var button = o as MenuItem;
+                if (button?.ToolTip is not string file) return;
+
+                ConfigManager.SaveAppConfig();
+
+                CurrentProject = ProjectManager.LoadProject(file);
+                ConfigManager.AddRecentProject(file);
+
+                ClearBlocks();
+
+                if (CurrentProject != null)
+                    ConfigManager.LoadBlocksFromProject(CurrentProject);
+
+                SetProjectName(CurrentProject!.ProjectName);
+                $"Project {CurrentProject.ProjectName} has opened.".Log();
+            };
+
+            ProjectContextMenu.Items.Add(selector);
+        });
+        
     }
 }
 

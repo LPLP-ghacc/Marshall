@@ -87,9 +87,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Remove="Resource\Background\1.png" />
-    <Content Include="Resource\Background\1.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <None Remove="Resource\Icons\funnyIcon.png" />
     <Content Include="Resource\Icons\funnyIcon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -111,6 +108,18 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Remove="app_config.json" />
+    <None Remove="Resource\Background\space.jpg" />
+    <Content Include="Resource\Background\space.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Background\girl.jpg" />
+    <Content Include="Resource\Background\girl.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Resource\Background\station.jpg" />
+    <Content Include="Resource\Background\station.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

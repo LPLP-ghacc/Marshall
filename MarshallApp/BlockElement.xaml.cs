@@ -115,21 +115,29 @@ public partial class BlockElement
                 case ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft:
                 {
                     var newLeft = GridUtils.Snap(globalPos.X);
+
+                    if (newLeft < 0) newLeft = 0;
+                    if (newLeft > right - GridSize) newLeft = right - GridSize;
+
                     var newWidth = right - newLeft;
                     if (newWidth > GridSize)
                     {
                         Width = newWidth;
                         Canvas.SetLeft(this, newLeft);
                     }
-
                     break;
                 }
                 case ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight:
                 {
                     var newRight = GridUtils.Snap(globalPos.X);
+                    
+                    if (newRight > canvas.Width) newRight = canvas.Width;
+                    if (newRight < left + GridSize) newRight = left + GridSize;
+
                     var newWidth = newRight - left;
                     if (newWidth > GridSize)
                         Width = newWidth;
+
                     break;
                 }
             }
@@ -140,6 +148,8 @@ public partial class BlockElement
                 case ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight:
                 {
                     var newTop = GridUtils.Snap(globalPos.Y);
+                    if (newTop < 0) newTop = 0;
+                    if (newTop > bottom - GridSize) newTop = bottom - GridSize;
                     var newHeight = bottom - newTop;
                     if (newHeight > GridSize)
                     {
@@ -192,7 +202,7 @@ public partial class BlockElement
     
     private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        bool wasResizingOrDragging = _isResizing || _isDragging;
+        var wasResizingOrDragging = _isResizing || _isDragging;
 
         if (_isResizing)
         {

@@ -17,6 +17,50 @@ public partial class ProjectOpenWindow : Window
     {
         InitializeComponent();
 
+        InitRecentProjectsButtons(recentProjects);
+    }
+    
+    private void UIElement_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e) => this.DragMove();
+
+    private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+    
+    private void Close_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void Browse_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new System.Windows.Forms.OpenFileDialog
+        {
+            Filter = "Marshall Project (*.mpr)|*.mpr",
+            Title = "Open Marshall Project"
+        };
+
+        if (dialog.ShowDialog()  != System.Windows.Forms.DialogResult.OK) return;
+        OpenProject(dialog.FileName);
+        
+        DialogResult = true;
+    }
+
+    private void Open_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProjectsList.SelectedItem is not string file) return;
+
+        OpenProject(file);
+        
+        DialogResult = true;
+    }
+
+    private void OpenProject(string file)
+    {
+        ConfigManager.SaveAppConfig();
+        ResultProject = ProjectManager.LoadProject(file);
+        ConfigManager.AddRecentProject(file);
+        
+        MainWindow.Instance?.SetProjectName(ResultProject.ProjectName);
+        $"Project {ResultProject.ProjectName} has opened.".Log();
+    }
+    
+        private void InitRecentProjectsButtons(List<string> recentProjects)
+    {
         recentProjects.ForEach((project) =>
         {
             var fileName = Path.GetFileNameWithoutExtension(project);
@@ -44,7 +88,6 @@ public partial class ProjectOpenWindow : Window
                 Style = tbStyle,
                 HorizontalAlignment = HorizontalAlignment.Left
             });
-            
             var selector = new Button
             {
                 Content = dp,
@@ -77,54 +120,12 @@ public partial class ProjectOpenWindow : Window
                 var button = sender as Button;
                 if (button?.ToolTip is string file)
                 {
-                    ResultProject = ProjectManager.LoadProject(file);
-                    ConfigManager.AddRecentProject(file);
-        
-                    MainWindow.Instance?.SetProjectName(ResultProject.ProjectName);
-                    $"Project {ResultProject.ProjectName} has opened.".Log();
+                    OpenProject(file);
                 }
                 DialogResult = true;
             };
             
             ProjectsList.Items.Add(selector);
         });
-    }
-    
-    private void UIElement_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e) => this.DragMove();
-
-    private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
-    
-    private void Close_Click(object sender, RoutedEventArgs e) => DialogResult = false;
-
-    private void Browse_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new System.Windows.Forms.OpenFileDialog
-        {
-            Filter = "Marshall Project (*.mpr)|*.mpr",
-            Title = "Open Marshall Project"
-        };
-
-        if (dialog.ShowDialog()  != System.Windows.Forms.DialogResult.OK) return;
-
-        ResultProject = ProjectManager.LoadProject(dialog.FileName);
-        ConfigManager.AddRecentProject(dialog.FileName);
-        
-        MainWindow.Instance?.SetProjectName(ResultProject.ProjectName);
-        $"Project {ResultProject.ProjectName} has opened.".Log();
-        
-        DialogResult = true;
-    }
-
-    private void Open_Click(object sender, RoutedEventArgs e)
-    {
-        if (ProjectsList.SelectedItem is not string file) return;
-
-        ResultProject = ProjectManager.LoadProject(file);
-        ConfigManager.AddRecentProject(file);
-        
-        MainWindow.Instance?.SetProjectName(ResultProject.ProjectName);
-        $"Project {ResultProject.ProjectName} has opened.".Log();
-        
-        DialogResult = true;
     }
 }

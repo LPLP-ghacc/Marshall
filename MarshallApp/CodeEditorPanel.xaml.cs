@@ -83,8 +83,12 @@ public partial class CodeEditorPanel
         File.WriteAllText(_currentFilePath, code);
         MessageBox.Show($"Saved: {Path.GetFileName(_currentFilePath)}",
                         "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-        (FindParent<MainWindow>()?.ScriptBrowser)?.RefreshScripts();
+    }
+    
+    public void LoadFile(string path)
+    {
+        _currentFilePath = path;
+        Editor.Text = File.ReadAllText(path);
     }
 
     private bool ConfirmUnsavedChanges()

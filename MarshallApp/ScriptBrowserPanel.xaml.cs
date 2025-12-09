@@ -1,95 +1,102 @@
 ﻿using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using MarshallApp.Models;
+using MarshallApp.Services;
 
 namespace MarshallApp;
 
-public partial class ScriptBrowserPanel
+public partial class ScriptBrowserPanel : UserControl
 {
-    public event Action<string>? ScriptSelected;
-    public event Action<string>? ScriptOpenInNewPanel;
-
-    private const string ScriptsFolder = "Scripts";
-
+    private BlockConfig? _selectedBlock;
+    
     public ScriptBrowserPanel()
     {
         InitializeComponent();
-        Directory.CreateDirectory(ScriptsFolder);
-        LoadScripts();
+        Loaded += ScriptBrowserPanel_Loaded;
     }
 
-    private void LoadScripts()
+    private void ScriptBrowserPanel_Loaded(object sender, RoutedEventArgs e)
     {
-        ScriptList.Items.Clear();
-        var files = Directory.GetFiles(ScriptsFolder, "*.py");
+        LoadProjects(ConfigManager.RecentProjects);
+    }
+    
+    public void LoadProjects(List<string> recentProjects)
+    {
+        ProjectTree.Items.Clear();
 
-        foreach (var file in files)
+        recentProjects.ForEach(path =>
         {
-            var fileNameNoExt = Path.GetFileNameWithoutExtension(file);
+            var project = ProjectManager.LoadProject(path);
             
-            var button = new Button
+            var root = new TreeViewItem
             {
-                Content = fileNameNoExt,
-                Tag = file,
-                Margin = new Thickness(3),
-                Height = 30,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                Padding = new Thickness(6, 3, 6, 3),
-                Style = (Style?)Application.Current.FindResource("FlatButtonStyle")
+                Header = project.ProjectName,
+                Tag = project
             };
 
-            var contextMenu = new ContextMenu
+            foreach (var block in project.Blocks)
             {
-                Style = (Style?)Application.Current.FindResource("DarkContextMenuStyle")
-            };
+                var blockNode = new TreeViewItem
+                {
+                    Header = Path.GetFileName(block.PythonFilePath ?? "(no file)"),
+                    Tag = block
+                };
 
-            var openPanelItem = new MenuItem
-            {
-                Header = "Run in new panel",
-                Style = (Style?)Application.Current.FindResource("DarkMenuItemStyle")
-            };
-            openPanelItem.Click += (_, _) => ScriptOpenInNewPanel?.Invoke(file);
+                
+                blockNode.Items.Add(new TreeViewItem { Header = $"Python File: {block.PythonFilePath}" });
+                blockNode.Items.Add(new TreeViewItem { Header = $"Looping: {block.IsLooping}" });
+                blockNode.Items.Add(new TreeViewItem { Header = $"Interval: {block.LoopIntervalSeconds}s" });
+                blockNode.Items.Add(new TreeViewItem { Header = $"Font Size: {block.OutputFontSize}" });
+                blockNode.Items.Add(new TreeViewItem { Header = $"Position: ({block.X}, {block.Y})" });
+                blockNode.Items.Add(new TreeViewItem { Header = $"Size: {block.WidthUnits} × {block.HeightUnits}" });
 
-            var openFolderItem = new MenuItem
-            {
-                Header = "Open file location",
-                Style = (Style?)Application.Current.FindResource("DarkMenuItemStyle")
-            };
+                root.Items.Add(blockNode);
+            }
+
+            ProjectTree.Items.Add(root);
             
-            openFolderItem.Click += (_, _) =>
-            {
-                if (File.Exists(file))
-                    Process.Start("explorer.exe", $"/select,\"{file}\"");
-            };
+            root.IsExpanded = true;
+        });
+    }
 
-            contextMenu.Items.Add(openPanelItem);
-            contextMenu.Items.Add(new Separator());
-            contextMenu.Items.Add(openFolderItem);
 
-            button.ContextMenu = contextMenu;
-
-            button.Click += (_, _) =>
-            {
-                ScriptSelected?.Invoke(file);
-            };
-
-            ScriptList.Items.Add(button);
+    private void ProjectTree_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        var treeItem = ProjectTree.SelectedItem as TreeViewItem;
+        if (treeItem?.Tag is not BlockConfig block)
+        {
+            ShowInspector(null);
+            return;
         }
+
+        ShowInspector(block);
     }
 
-    public void ScriptList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+
+    private void ShowInspector(BlockConfig? block)
     {
-        if (ScriptList.SelectedItem is not string fileName) return;
-        var fullPath = Path.Combine(ScriptsFolder, fileName); 
-        ScriptSelected?.Invoke(fullPath);
+        _selectedBlock = block;
+
+        if (block == null || !File.Exists(block.PythonFilePath))
+        {
+            Editor.Text = "Select block to view code.";
+            return;
+        }
+
+        Editor.Text = File.ReadAllText(block.PythonFilePath);
     }
-
-    public void RefreshScripts() => LoadScripts();
-
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    
+    private void EditButton_OnClick(object sender, RoutedEventArgs e)
     {
-        RefreshScripts();
+        if (_selectedBlock?.PythonFilePath == null) return;
+
+        var mw = MainWindow.Instance;
+
+        mw!.CodeEditor.LoadFile(_selectedBlock.PythonFilePath);
+
+        mw.OpenUiElement(mw.CodeEditor, mw.CodeEditorShowButton);
     }
 }

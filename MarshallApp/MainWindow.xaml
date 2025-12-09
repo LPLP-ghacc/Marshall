@@ -81,7 +81,7 @@
                                Margin="5"/>
                     <Button x:Name="ProjectButton" Margin="4" PreviewMouseLeftButtonDown="ProjectButton_OnPreviewMouseLeftButtonDown" Background="#11FFFFFF" Style="{StaticResource FlatButtonStyle}" Content="">
                         <Button.ContextMenu>
-                            <ContextMenu x:Name="ProjectContextMenu" 
+                            <ContextMenu x:Name="ProjectContextMenu" Loaded="ProjectContextMenu_OnLoaded" 
                                          Style="{StaticResource DarkContextMenuStyle}"
                                          PlacementTarget="{Binding ElementName=WindowButton}"
                                          StaysOpen="False">
@@ -97,7 +97,7 @@
                     </Button>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
-                    <TextBlock x:Name="Logger" Margin="5,5,100,5" VerticalAlignment="Center" Foreground="#7100EA0A"/>
+                    <TextBlock x:Name="Logger" Margin="5,5,100,5" VerticalAlignment="Center" Foreground="#1200EA0A"/>
                     <Button x:Name="Minimize" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Minimize_OnClick_Click">
                         <Grid>
                             <Line X1="0" Y1="0" X2="15" Y2="0" Stroke="{StaticResource PrimaryTextBrush}" />
@@ -190,8 +190,9 @@
                 </StackPanel>
             </Grid>
             <Grid Grid.Column="1">
-                <local:ScriptBrowserPanel x:Name="ScriptBrowser" Visibility="Collapsed" ScriptSelected="ScriptBrowser_ScriptSelected"/>
-                <Canvas x:Name="MainCanvas" Visibility="Collapsed" PreviewMouseRightButtonDown="MainCanvas_PreviewMouseRightButtonDown" IsHitTestVisible="True" Background="#01FFFFFF">
+                <local:ScriptBrowserPanel x:Name="ScriptBrowser" Visibility="Collapsed"/>
+                <Canvas x:Name="MainCanvas" Visibility="Collapsed" PreviewMouseRightButtonDown="MainCanvas_PreviewMouseRightButtonDown" IsHitTestVisible="True" 
+                        Background="#CE000000">
                     <Canvas.ContextMenu>
                         <ContextMenu x:Name="MainCanvasContextMenu" 
                                      Style="{StaticResource DarkContextMenuStyle}"
