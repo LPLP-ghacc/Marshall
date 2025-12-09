@@ -3,13 +3,11 @@ using MarshallApp.Services;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using MarshallApp.Controllers;
 using Application = System.Windows.Application;
@@ -19,20 +17,12 @@ using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
-using Menu = System.Windows.Controls.Menu;
 using MenuItem = System.Windows.Controls.MenuItem;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using Path = System.IO.Path;
 using Point = System.Windows.Point;
 
 namespace MarshallApp;
-
-/*
- * 1. сетка не отрисовывается до конца
- * 3. блок выходит за границы
- * 4. когда блок большой (растянут) при передвижении он лагае
- * 9. иерархия папок для скрипт браузера
- */
 
 public partial class MainWindow : INotifyPropertyChanged
 {
@@ -218,68 +208,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
         ConfigManager.SaveAppConfig();
     }
-
-    #region Script Browser
-    private void ScriptBrowser_OpenInNewPanel(string filePath)
-    {
-        var block = new BlockElement(RemoveBlockElement, LimitSettings)
-        {
-            FilePath = filePath
-        };
-
-        Blocks.Add(block);
-        
-        var sizeW = block.Width;
-        var sizeH = block.Height;
-
-        var pos = FindFreePosition(sizeW, sizeH);
-
-        Canvas.SetLeft(block, pos.X);
-        Canvas.SetTop(block, pos.Y);
-        
-        MainCanvas.Children.Add(block);
-        _ = block.RunPythonScript();
-        
-        ConfigManager.SaveAppConfig();
-    }
     
-    private Point FindFreePosition(double width, double height)
-    {
-        const double step = BlockElement.GridSize;
-
-        for (double y = 0; y < MainCanvas.Height - height; y += step)
-        {
-            for (double x = 0; x < MainCanvas.Width - width; x += step)
-            {
-                var area = new Rect(x, y, width, height);
-                var intersects = false;
-
-                foreach (UIElement child in MainCanvas.Children)
-                {
-                    if (child is not BlockElement b) continue;
-                    var bx = Canvas.GetLeft(b);
-                    var by = Canvas.GetTop(b);
-                    var rect = new Rect(bx, by, b.Width, b.Height);
-
-                    if (!area.IntersectsWith(rect)) continue;
-                    intersects = true;
-                    break;
-                }
-
-                if (!intersects)
-                    return new Point(x, y);
-            }
-        }
-
-        return new Point(0, 0); // fallback
-    }
-
-    private void ScriptBrowser_ScriptSelected(string? filePath)
-    {
-        if (filePath != null) CodeEditor.LoadScript(filePath);
-    }
-    #endregion
-
     #region Top Panel Menu
     
     private void MainCanvas_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -317,15 +246,6 @@ public partial class MainWindow : INotifyPropertyChanged
     {
         var block = new BlockElement(RemoveBlockElement, LimitSettings);
         AddBlockElement(block);
-    }
-
-    private void Settings_Click(object sender, RoutedEventArgs e)
-    {
-        return;
-        if (Settings.Instanse != null) return;
-        
-        var settings = new Settings();
-        settings.Show();
     }
     #endregion
 
@@ -383,15 +303,7 @@ public partial class MainWindow : INotifyPropertyChanged
         ConfigManager.SaveAppConfig();
         Environment.Exit(0);
     }
-
-    private void AboutMarshall_Click(object sender, RoutedEventArgs e)
-    {
-        if(About.Instance != null) return;
-        
-        var aboutWindow = new About();
-        aboutWindow.Show();
-    }
-
+    
     #endregion
 
     #region DragDropBlockElement
@@ -576,8 +488,9 @@ public partial class MainWindow : INotifyPropertyChanged
             {
                 Header = fileName,
                 ToolTip = project,
-                Style = ((Style?)Application.Current.Resources["DarkMenuItemStyle"] ?? throw new InvalidOperationException())!
+                Style = ((Style?)Application.Current.Resources["DarkMenuItemStyle"] ?? throw new InvalidOperationException())
             };
+            
             selector.Click += (o, _) =>
             {
                 var button = o as MenuItem;
