@@ -73,7 +73,25 @@ public partial class MainWindow : INotifyPropertyChanged
         
         LimitSettings = new LimitSettings(10, 300);
 
-        ConfigManager.LoadAllConfigs();
+        Loaded += async (_, _) =>
+        {
+            await ConfigManager.LoadAllConfigs();
+            ScriptBrowser.LoadProjects(ConfigManager.RecentProjects);
+            
+            if (CurrentProject != null)
+                return;
+
+            var window = new ProjectCreationWindow
+            {
+                Owner = this
+            };
+
+            if (window.ShowDialog() != true) Environment.Exit(-1);
+            CurrentProject = window.ResultProject;
+            SetProjectName(CurrentProject?.ProjectName!);
+            ConfigManager.SaveAppConfig();
+            ClearBlocks();
+        };
         
         NewScript();
         InitializeTray();
@@ -482,7 +500,6 @@ public partial class MainWindow : INotifyPropertyChanged
         SetProjectName(CurrentProject?.ProjectName!);
         ConfigManager.SaveAppConfig();
         ClearBlocks();
-
     }
 
     private void OpenProject_OnClick(object sender, RoutedEventArgs e)

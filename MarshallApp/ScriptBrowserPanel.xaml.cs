@@ -27,8 +27,14 @@ public partial class ScriptBrowserPanel : UserControl
     {
         ProjectTree.Items.Clear();
 
+        if (recentProjects.Count == 0)
+        {
+            "No recent projects".Log();
+            return;
+        }
         recentProjects.ForEach(path =>
         {
+            path.Log();
             var project = ProjectManager.LoadProject(path);
             
             var root = new TreeViewItem

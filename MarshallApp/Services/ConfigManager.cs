@@ -33,8 +33,9 @@ public static class ConfigManager
             var json = await File.ReadAllTextAsync(ConfigPath);
             return JsonSerializer.Deserialize<AppConfig>(json) ?? AppConfig.Default;
         }
-        catch
+        catch (Exception ex)
         {
+            ex.Message.Log();
             return AppConfig.Default;
         }
     }
@@ -58,7 +59,7 @@ public static class ConfigManager
         Save(_appConfig);
     }
     
-    public static async void LoadAllConfigs()
+    public static async Task LoadAllConfigs()
     {
         try
         {
@@ -67,21 +68,29 @@ public static class ConfigManager
             var instance = MainWindow.Instance;
             if (instance != null)
             {
-                instance.Width = _appConfig.WindowWidth;
-                instance.Height = _appConfig.WindowHeight;
+                if (_appConfig.WindowWidth > 0) instance.Width = _appConfig.WindowWidth;
+                if (_appConfig.WindowHeight > 0) instance.Height = _appConfig.WindowHeight;
             }
 
-            if (string.IsNullOrEmpty(_appConfig.LastProjectPath)) return;
+            if (string.IsNullOrEmpty(_appConfig.LastProjectPath) || !File.Exists(_appConfig.LastProjectPath))
+            {
+                $"No last project to load. Path='{_appConfig.LastProjectPath}' Exists={File.Exists(_appConfig.LastProjectPath ?? "")}".Log();
+                return;
+            }
             var project = ProjectManager.LoadProject(_appConfig.LastProjectPath);
-            MainWindow.Instance?.CurrentProject = project;
-            MainWindow.Instance?.SetProjectName(project.ProjectName);
-            LoadBlocksFromProject(project);
+            
+            MainWindow.Instance?.Dispatcher.Invoke(() =>
+            {
+                MainWindow.Instance!.CurrentProject = project;
+                MainWindow.Instance!.SetProjectName(project.ProjectName);
+                LoadBlocksFromProject(project);
+            });
             
             $"Project {instance?.CurrentProject?.ProjectName} has been opened.".Log();
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            e.Message.Log();
         }
     }
     
