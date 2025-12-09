@@ -107,7 +107,6 @@
     <Content Include="Resource\Icons\IconSmall.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <None Remove="app_config.json" />
     <None Remove="Resource\Background\space.jpg" />
     <Content Include="Resource\Background\space.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -119,6 +118,10 @@
     <None Remove="Resource\Background\station.jpg" />
     <Content Include="Resource\Background\station.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="app_config.json" />
+    <Content Include="app_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
