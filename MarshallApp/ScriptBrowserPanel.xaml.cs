@@ -23,6 +23,8 @@ public partial class ScriptBrowserPanel : UserControl
         LoadProjects(ConfigManager.RecentProjects);
     }
     
+    public void Update() => LoadProjects(ConfigManager.RecentProjects);
+    
     public void LoadProjects(List<string> recentProjects)
     {
         ProjectTree.Items.Clear();

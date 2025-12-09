@@ -77,6 +77,7 @@ public partial class MainWindow : INotifyPropertyChanged
         {
             await ConfigManager.LoadAllConfigs();
             ScriptBrowser.LoadProjects(ConfigManager.RecentProjects);
+            ScriptBrowser.Update();
             
             if (CurrentProject != null)
                 return;
@@ -228,7 +229,6 @@ public partial class MainWindow : INotifyPropertyChanged
 
         Blocks.Add(block);
         
-        
         var sizeW = block.Width;
         var sizeH = block.Height;
 
@@ -333,7 +333,11 @@ public partial class MainWindow : INotifyPropertyChanged
     
     private void MainCanvasShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(MainCanvas, sender);
 
-    private void ScriptBrowserShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(ScriptBrowser, sender);
+    private void ScriptBrowserShowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ScriptBrowser.Update();
+        OpenUiElement(ScriptBrowser, sender);
+    } 
 
     private void CodeEditorShowButton_OnClick(object sender, RoutedEventArgs e)=> OpenUiElement(CodeEditor, sender);
 
