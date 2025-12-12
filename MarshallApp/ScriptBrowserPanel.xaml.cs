@@ -235,7 +235,7 @@ public partial class ScriptBrowserPanel
         {
             Owner = mainWindow
         };
-
+        
         if (window.ShowDialog() != true) return;
         if (mainWindow == null) return;
         mainWindow.CurrentProject = window.ResultProject;
@@ -253,6 +253,7 @@ public partial class ScriptBrowserPanel
             Filter = "Marshall Project (*.mpr)|*.mpr",
             Title = "Open Marshall Project"
         };
+        if (MainWindow.Instance != null) dialog.InitialDirectory = MainWindow.Instance._defaultMarshallProjectsPath;
         if (dialog.ShowDialog()  != DialogResult.OK) return;
         
         var mainWindow = MainWindow.Instance;

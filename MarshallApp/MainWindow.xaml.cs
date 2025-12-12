@@ -3,6 +3,7 @@ using MarshallApp.Services;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -26,6 +27,7 @@ namespace MarshallApp;
 
 public partial class MainWindow : INotifyPropertyChanged
 {
+    public readonly string _defaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
     private NotifyIcon? _trayIcon;
     public readonly List<BlockElement> Blocks = [];
     private WallpaperController? _wallControl;
@@ -43,6 +45,8 @@ public partial class MainWindow : INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
         Instance = this;
+        
+        if(!Directory.Exists(_defaultMarshallProjectsPath)) Directory.CreateDirectory(_defaultMarshallProjectsPath);
         
         _mainFieldElements.Add(ScriptBrowser);
         _mainFieldElements.Add(MainCanvas);

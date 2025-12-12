@@ -24,6 +24,7 @@ public partial class ProjectCreationWindow
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
         using var dialog = new FolderBrowserDialog();
+        if (MainWindow.Instance != null) dialog.InitialDirectory = MainWindow.Instance._defaultMarshallProjectsPath;
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
             LocationBox.Text = dialog.SelectedPath;
