@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using MarshallApp.Models;
 using MarshallApp.Services;
+using System.Windows.Forms;
 using MessageBox = System.Windows.MessageBox;
 
 namespace MarshallApp;
@@ -72,4 +73,26 @@ public partial class ProjectCreationWindow
     private void Cancel_Click(object sender, RoutedEventArgs e) => this.DialogResult = false;
     private void Close_Click(object sender, RoutedEventArgs e) => this.DialogResult = false;
     private void UIElement_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e) => this.DragMove();
+
+    private void Browse_Click(object sender, RoutedEventArgs e)
+    {
+        var mainWindow = MainWindow.Instance;
+        if (mainWindow == null) return;
+        
+        var dialog = new OpenFileDialog
+        {
+            Filter = "Marshall Project (*.mpr)|*.mpr",
+            Title = "Open Marshall Project"
+        };
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+        
+        var project = ProjectManager.LoadProject(dialog.FileName);
+        ConfigManager.AddRecentProject(dialog.FileName);
+        
+        $"Project {project.ProjectName} has opened.".Log();
+
+        ResultProject = project;
+        
+        DialogResult = true;
+    }
 }

@@ -18,6 +18,7 @@ public abstract class ProjectManager
 
     public static Project LoadProject(string filePath)
     {
+        $"Trying to load project {filePath}".Log();
         var json = File.ReadAllText(filePath);
         return JsonSerializer.Deserialize<Project>(json)
                ?? throw new Exception("Invalid project file.");
@@ -31,7 +32,7 @@ public abstract class ProjectManager
         var project = new Project(name, folder, []);
 
         SaveProject(project);
-
+        $"Created and saved {project.ProjectName}".Log();
         return project;
     }
 }

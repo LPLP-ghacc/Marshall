@@ -31,7 +31,7 @@ public partial class MainWindow : INotifyPropertyChanged
     private WallpaperController? _wallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
     private readonly DispatcherTimer _loggerTimer = new();
-    public readonly LimitSettings LimitSettings;
+    public LimitSettings LimitSettings { get; } = new(10, 300);
     public Project? CurrentProject { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
     public static MainWindow? Instance { get; private set; }
@@ -61,11 +61,13 @@ public partial class MainWindow : INotifyPropertyChanged
                 this.DragMove();
         };
         
-        LimitSettings = new LimitSettings(10, 300);
-
+        if (ConfigManager.AppConfig != null) LimitSettings = 
+            new LimitSettings(ConfigManager.AppConfig.CpuLimitPercent, ConfigManager.AppConfig.MemoryLimitMb) ;
+        
         Loaded += async (_, _) =>
         {
             await ConfigManager.LoadAllConfigs();
+
             ScriptBrowser.LoadProjects(ConfigManager.RecentProjects);
             ScriptBrowser.Update();
             
@@ -80,8 +82,7 @@ public partial class MainWindow : INotifyPropertyChanged
             if (window.ShowDialog() != true) Environment.Exit(-1);
             CurrentProject = window.ResultProject;
             SetProjectName(CurrentProject?.ProjectName!);
-            ConfigManager.SaveAppConfig();
-            ClearBlocks();
+            if (CurrentProject != null) ConfigManager.LoadBlocksFromProject(CurrentProject);
         };
         
         NewScript();

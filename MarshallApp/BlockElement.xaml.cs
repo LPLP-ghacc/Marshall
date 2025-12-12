@@ -441,7 +441,7 @@ public partial class BlockElement
 
         Dispatcher.Invoke(async () =>
         {
-            OutputText.Text += $"\nМодуль '{module}' не найден. Устанавливаю...\n";
+            OutputText.Text += $"\nModule '{module}' was not found. Installing...\n";
 
             var psi = new ProcessStartInfo
             {
@@ -468,19 +468,19 @@ public partial class BlockElement
 
                     if (process.ExitCode == 0)
                     {
-                        OutputText.Text += $"Успешно установлен: {module}\nПерезапускаю скрипт...\n";
+                        OutputText.Text += $"Successfully installed: {module}\nThe script is being restarted...\n";
                         await Task.Delay(800);
                         _ = RunPythonScript();
                     }
                     else
                     {
-                        OutputText.Text += $"Ошибка установки {module}:\n{error}\n";
+                        OutputText.Text += $"{module} installation error:\n{error}\n";
                     }
                 }
             }
             catch (Exception ex)
             {
-                OutputText.Text += $"Не удалось установить {module}: {ex.Message}\n";
+                OutputText.Text += $"Couldn't install {module}: {ex.Message}\n";
             }
         });
         return;
@@ -508,48 +508,6 @@ public partial class BlockElement
                 UseShellExecute = true
             });
         }
-    }
-
-    private static async Task<bool> InstallPythonPackage(string package)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "python",
-                Arguments = $"-m pip install {package}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-                StandardInputEncoding = Encoding.UTF8,
-            };
-            
-            using var process = new Process();
-            process.StartInfo = psi;
-            process.Start();
-            var error = await process.StandardError.ReadToEndAsync();
-            var success = !error.Contains("ERROR", StringComparison.OrdinalIgnoreCase);
-            
-            return success;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static string? ParseMissingModule(string errorText)
-    {
-        var start = errorText.IndexOf("No module named '", StringComparison.Ordinal);
-        if (start == -1)
-            return null;
-        start += "No module named '".Length;
-
-        var end = errorText.IndexOf('\'', start);
-        return end == -1 ? null : errorText[start..end];
     }
     
     private static bool IsPythonInstalled()

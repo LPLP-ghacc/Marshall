@@ -261,10 +261,7 @@ public partial class ScriptBrowserPanel
         ConfigManager.SaveAppConfig();
         var project = ProjectManager.LoadProject(dialog.FileName);
         ConfigManager.AddRecentProject(dialog.FileName);
-        
-        MainWindow.Instance?.SetProjectName(project.ProjectName);
         $"Project {project.ProjectName} has opened.".Log();
-        
         mainWindow.CurrentProject = project;
         mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
         if (mainWindow.CurrentProject != null) ConfigManager.LoadBlocksFromProject(mainWindow.CurrentProject);

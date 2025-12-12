@@ -41,6 +41,8 @@
                     <Grid HorizontalAlignment="Left">
 
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Image x:Name="ScriptIconImage"/>
+                            
                             <TextBlock x:Name="FileNameText"
                                        DockPanel.Dock="Left"
                                        Text=""

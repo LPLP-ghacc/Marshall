@@ -2,5 +2,7 @@
   "LastProjectPath": "",
   "WindowWidth": 1529,
   "WindowHeight": 812,
-  "RecentProjects": []
+  "RecentProjects": [],
+  "MemoryLimitMb": 10,
+  "CpuLimitPercent": 300
 }

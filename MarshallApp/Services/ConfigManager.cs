@@ -8,14 +8,14 @@ namespace MarshallApp.Services;
 
 public static class ConfigManager
 {
-    private static AppConfig? _appConfig;
+    public static AppConfig? AppConfig;
     private const string ConfigPath = "app_config.json";
     public static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     
     private const int MaxRecent = 10;
 
     public static List<string> RecentProjects =>
-        _appConfig?.RecentProjects ?? [];
+        AppConfig?.RecentProjects ?? [];
 
     private static void Save(AppConfig config)
     {
@@ -42,7 +42,7 @@ public static class ConfigManager
     
     public static void AddRecentProject(string path)
     {
-        _appConfig ??= AppConfig.Default;
+        AppConfig ??= AppConfig.Default;
 
         if (string.IsNullOrWhiteSpace(path))
             return;
@@ -50,34 +50,34 @@ public static class ConfigManager
         path = Path.GetFullPath(path)
             .TrimEnd(Path.DirectorySeparatorChar);
 
-        _appConfig.RecentProjects.Remove(path);
-        _appConfig.RecentProjects.Insert(0, path);
+        AppConfig.RecentProjects.Remove(path);
+        AppConfig.RecentProjects.Insert(0, path);
 
-        if (_appConfig.RecentProjects.Count > MaxRecent)
-            _appConfig.RecentProjects.RemoveAt(_appConfig.RecentProjects.Count - 1);
+        if (AppConfig.RecentProjects.Count > MaxRecent)
+            AppConfig.RecentProjects.RemoveAt(AppConfig.RecentProjects.Count - 1);
 
-        Save(_appConfig);
+        Save(AppConfig);
     }
     
     public static async Task LoadAllConfigs()
     {
         try
         {
-            _appConfig = await Load();
+            AppConfig = await Load();
 
             var instance = MainWindow.Instance;
             if (instance != null)
             {
-                if (_appConfig.WindowWidth > 0) instance.Width = _appConfig.WindowWidth;
-                if (_appConfig.WindowHeight > 0) instance.Height = _appConfig.WindowHeight;
+                if (AppConfig.WindowWidth > 0) instance.Width = AppConfig.WindowWidth;
+                if (AppConfig.WindowHeight > 0) instance.Height = AppConfig.WindowHeight;
             }
 
-            if (string.IsNullOrEmpty(_appConfig.LastProjectPath) || !File.Exists(_appConfig.LastProjectPath))
+            if (string.IsNullOrEmpty(AppConfig.LastProjectPath) || !File.Exists(AppConfig.LastProjectPath))
             {
-                $"No last project to load. Path='{_appConfig.LastProjectPath}' Exists={File.Exists(_appConfig.LastProjectPath ?? "")}".Log();
+                $"No last project to load. Path='{AppConfig.LastProjectPath}' Exists={File.Exists(AppConfig.LastProjectPath ?? "")}".Log();
                 return;
             }
-            var project = ProjectManager.LoadProject(_appConfig.LastProjectPath);
+            var project = ProjectManager.LoadProject(AppConfig.LastProjectPath);
             
             MainWindow.Instance?.Dispatcher.Invoke(() =>
             {
@@ -99,14 +99,14 @@ public static class ConfigManager
         var instance = MainWindow.Instance;
         Debug.Assert(instance != null, nameof(instance) + " != null");
 
-        _appConfig ??= AppConfig.Default;
+        AppConfig ??= AppConfig.Default;
 
-        _appConfig.WindowWidth = instance.Width;
-        _appConfig.WindowHeight = instance.Height;
+        AppConfig.WindowWidth = instance.Width;
+        AppConfig.WindowHeight = instance.Height;
 
         if (instance.CurrentProject != null)
         {
-            _appConfig.LastProjectPath = Path.Combine(
+            AppConfig.LastProjectPath = Path.Combine(
                 instance.CurrentProject.ProjectPath,
                 instance.CurrentProject.ProjectName + ProjectManager.ProjectExtension
             );
@@ -114,9 +114,9 @@ public static class ConfigManager
 
         SaveCurrentProject();
 
-        $"Project {instance.CurrentProject?.ProjectName} has been saved to {_appConfig.LastProjectPath}".Log();
+        $"Project {instance.CurrentProject?.ProjectName} has been saved to {AppConfig.LastProjectPath}".Log();
         
-        Save(_appConfig);
+        Save(AppConfig);
     }
 
     private static void SaveCurrentProject()
@@ -150,9 +150,12 @@ public static class ConfigManager
         Debug.Assert(instance != null, nameof(instance) + " != null");
         
         instance.ClearBlocks();
-
+        
+        "Start loading blocks.".Log();
         foreach (var cfg in project.Blocks)
         {
+            $"{cfg.PythonFilePath}".Log();
+            
             var block = new BlockElement(instance.RemoveBlockElement, instance.LimitSettings)
             {
                 FilePath = cfg.PythonFilePath,

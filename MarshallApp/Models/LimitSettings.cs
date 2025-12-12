@@ -10,5 +10,4 @@ public class LimitSettings
         CpuLimitPercent = cpuLimitPercent;
         MemoryLimitMb = memoryLimitMb;
     }
-
 }
