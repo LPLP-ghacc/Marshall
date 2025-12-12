@@ -7,15 +7,13 @@ namespace MarshallApp;
 public partial class CodeEditorPanel
 {
     private string? _currentFilePath;
-    private const string ScriptsFolder = "Scripts";
 
     public CodeEditorPanel()
     {
         InitializeComponent();
-        Directory.CreateDirectory(ScriptsFolder);
     }
 
-    public void LoadScript(string filePath)
+    private void LoadScript(string filePath)
     {
         _currentFilePath = filePath;
         FileNameText.Text = Path.GetFileName(filePath);
@@ -45,6 +43,11 @@ public partial class CodeEditorPanel
             NewScript();
     }
 
+    private static string GetInitialScriptsDirectory()
+    {
+        return MainWindow.Instance?.CurrentProject?.ProjectPath != null ? Path.Combine(MainWindow.Instance.CurrentProject.ProjectPath, "Scripts") : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+    }
+
     private void OpenButton_Click(object sender, RoutedEventArgs e)
     {
         if(!ConfirmUnsavedChanges())
@@ -52,7 +55,7 @@ public partial class CodeEditorPanel
 
         var dlg = new Microsoft.Win32.OpenFileDialog
         {
-            InitialDirectory = Path.GetFullPath(ScriptsFolder),
+            InitialDirectory = GetInitialScriptsDirectory(),
             Filter = "Python files (*.py)|*.py|All files (*.*)|*.*"
         };
 
@@ -68,7 +71,7 @@ public partial class CodeEditorPanel
         {
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                InitialDirectory = Path.GetFullPath(ScriptsFolder),
+                InitialDirectory = GetInitialScriptsDirectory(),
                 Filter = "Python files (*.py)|*.py",
                 FileName = FileNameText.Text
             };
@@ -88,7 +91,11 @@ public partial class CodeEditorPanel
     public void LoadFile(string path)
     {
         _currentFilePath = path;
-        Editor.Text = File.ReadAllText(path);
+        Dispatcher.Invoke(() =>
+        {
+            Editor.Text = File.ReadAllText(path);
+            FileNameText.Text = Path.GetFileName(path);
+        });
     }
 
     private bool ConfirmUnsavedChanges()

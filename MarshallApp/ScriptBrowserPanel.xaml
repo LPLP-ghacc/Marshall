@@ -4,35 +4,51 @@
              xmlns:local="clr-namespace:MarshallApp"
              xmlns:models="clr-namespace:MarshallApp.Models"
              xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+             xmlns:forms="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              Background="{StaticResource PanelsBrush2}">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="400"/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <TreeView x:Name="ProjectTree"
-                  Margin="5"
-                  Background="{StaticResource PanelsBrush}"
-                  Foreground="{StaticResource PrimaryTextBrush}"
-                  SelectedItemChanged="ProjectTree_OnSelectedItemChanged"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  ScrollViewer.HorizontalScrollBarVisibility="Hidden">
-
-            <TreeView.Resources>
-                <Style TargetType="TreeViewItem">
-                    <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
-                    <Setter Property="FontSize" Value="14"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Margin" Value="2"/>
-                </Style>
-
-                <HierarchicalDataTemplate DataType="{x:Type models:BlockConfig}">
-                    <TextBlock Text="{Binding PythonFilePath, TargetNullValue='(empty block)'}"/>
-                </HierarchicalDataTemplate>
-            </TreeView.Resources>
-        </TreeView>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Row="0" Margin="5">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                        <Button Content="Open Project" Width="80" Click="Open_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
+                    </Border>
+                    <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                        <Button Content="New Project" Width="80" Click="New_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
+                    </Border>
+                    <Button Content="Browse..." Width="80" Click="Browse_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+            <Grid Row="1">
+                <TreeView x:Name="ProjectTree"
+                          Margin="5"
+                          Background="{StaticResource PanelsBrush}"
+                          Foreground="{StaticResource PrimaryTextBrush}"
+                          SelectedItemChanged="ProjectTree_OnSelectedItemChanged"
+                          Style="{StaticResource ModernTreeViewStyle}"
+                          ItemContainerStyle="{StaticResource ModernTreeViewItemStyle}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                
+                    <TreeView.Resources>
+                        <HierarchicalDataTemplate DataType="{x:Type models:BlockConfig}">
+                            <TextBlock Text="{Binding PythonFilePath, TargetNullValue='(empty block)'}" Style="{StaticResource FlatTextBlockStyle}"/>
+                        </HierarchicalDataTemplate>
+                    </TreeView.Resources>
+                </TreeView>
+            </Grid>
+            
+        </Grid>
         
         <Grid Grid.Column="1" x:Name="InspectorContent">
             <Grid.RowDefinitions>
@@ -60,7 +76,55 @@
                                ScrollViewer.VerticalScrollBarVisibility="Auto"
                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
         </Grid>
+        
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="5">
+                <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                    <Button Content="Run" Width="70" Click="RunScript_Click"
+                            Style="{StaticResource FlatButtonStyle}" Margin="2"/>
+                </Border>
+                <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                    <Button Content="Stop" Width="70" Click="StopScript_Click"
+                            Style="{StaticResource FlatButtonStyle}" Margin="2"/>
+                </Border>
+            </StackPanel>
+            
+            <Grid Grid.Row="1" Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Row="0">
+                    <ScrollViewer Grid.Row="0" Background="{StaticResource PanelsBrush}"
+                                  VerticalScrollBarVisibility="Auto">
+                        <TextBox x:Name="RunOutput"
+                                 TextWrapping="Wrap"
+                                 Foreground="{StaticResource PrimaryTextBrush}"
+                                 Style="{StaticResource FlatTextBoxStyle}"
+                                 FontFamily="Consolas" 
+                                 FontSize="14"
+                                 IsReadOnly="True"
+                                 IsHitTestVisible="False"/>
+                    </ScrollViewer>
+                </Grid>
+                <Grid Row="1">
+                    <WindowsFormsHost >
+                        <forms:TextBox x:Name="CmdHost"
+                                       Multiline="True"
+                                       Dock="Fill"
+                                       BackColor="Black"
+                                       ForeColor="White"
+                                       Font="Consolas, 9pt"
+                                       BorderStyle="None"
+                                       ScrollBars="Vertical"/>
+                    </WindowsFormsHost>
+                </Grid>
+            </Grid>
+        </Grid>
     </Grid>
-
 </UserControl>

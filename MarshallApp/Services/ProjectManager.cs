@@ -7,7 +7,7 @@ namespace MarshallApp.Services;
 public abstract class ProjectManager
 {
     public const string ProjectExtension = ".mpr";
-
+    
     public static void SaveProject(Project project)
     {
         var filePath = Path.Combine(project.ProjectPath, project.ProjectName + ProjectExtension);
@@ -26,7 +26,7 @@ public abstract class ProjectManager
     public static Project CreateNewProject(string folder, string name)
     {
         Directory.CreateDirectory(folder);
-        Directory.CreateDirectory(Path.Combine(folder, "MarshallProjects"));
+        Directory.CreateDirectory(Path.Combine(folder, "Scripts"));
 
         var project = new Project(name, folder, []);
 

@@ -58,7 +58,7 @@ public partial class ProjectOpenWindow
         $"Project {ResultProject.ProjectName} has opened.".Log();
     }
     
-        private void InitRecentProjectsButtons(List<string> recentProjects)
+    private void InitRecentProjectsButtons(List<string> recentProjects)
     {
         recentProjects.ForEach((project) =>
         {

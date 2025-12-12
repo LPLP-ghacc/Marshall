@@ -1,9 +1,30 @@
 ﻿<Application x:Class="MarshallApp.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:MarshallApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        
+        <SolidColorBrush x:Key="SidebarButtonActiveBackground" Color="#22FFFFFF"/>
+        <Color x:Key="PrimaryColor">#111</Color>
+        <Brush x:Key="PrimaryBrush">#111</Brush>
+        <Color x:Key="PanelsColor">#1E1E1E</Color>
+        <Brush x:Key="PanelsBrush">#1E1E1E</Brush>
+        <Color x:Key="PanelsColo2">#252526</Color>
+        <Brush x:Key="PanelsBrush2">#252526</Brush>
+        <Color x:Key="AdditionalColor">#333</Color>
+        <Brush x:Key="AdditionalBrush">#333</Brush>
+        <Color x:Key="AdditionalColor2">#222</Color>
+        <Brush x:Key="AdditionalBrush2">#222</Brush>
+        <Color x:Key="PrimaryAccentColor">DarkRed</Color>
+        <Brush x:Key="PrimaryAccentBrush">DarkRed</Brush>
+        <Color x:Key="PrimaryColorA">#6B4E2C</Color>
+        <Brush x:Key="PrimaryBrushA">#111</Brush>
+        <Color x:Key="PrimaryTextColor">#fff</Color>
+        <Brush x:Key="PrimaryTextBrush">#fff</Brush>
+        
+        
         <Style x:Key="FlatButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="8,8,8,8"/>
             <Setter Property="Margin" Value="5,0,5,0"/>
@@ -79,9 +100,6 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-        <!-- Контекстное меню -->
         <Style x:Key="DarkContextMenuStyle" TargetType="ContextMenu">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -105,7 +123,6 @@
             </Setter>
         </Style>
 
-        <!-- Пункты меню -->
         <Style x:Key="DarkMenuItemStyle" TargetType="MenuItem">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -139,7 +156,6 @@
             </Setter>
         </Style>
 
-        <!-- Разделители -->
         <Style TargetType="Separator">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -156,7 +172,6 @@
             </Setter>
         </Style>
 
-        <!-- Общий стиль для ScrollViewer -->
         <Style TargetType="ScrollViewer" x:Key="DarkScrollViewerStyle">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="Foreground" Value="#DDD"/>
@@ -164,7 +179,6 @@
             <Setter Property="PanningMode" Value="Both"/>
         </Style>
 
-        <!-- Вертикальный ScrollBar -->
         <Style TargetType="ScrollBar" x:Key="DarkScrollBarVertical">
             <Setter Property="Width" Value="8"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -210,7 +224,6 @@
             </Setter>
         </Style>
 
-        <!-- Горизонтальный ScrollBar -->
         <Style TargetType="ScrollBar" x:Key="DarkScrollBarHorizontal">
             <Setter Property="Height" Value="8"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -385,26 +398,107 @@
                 </Setter.Value>
             </Setter>
         </Style>
+  
+        <Style x:Key="ModernTreeViewStyle" TargetType="TreeView">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeView">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         
+        <Style x:Key="ModernTreeViewExpanderStyle" TargetType="ToggleButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Width="12" Height="12" Background="Transparent">
+                            <Path x:Name="Arrow"
+                                  Data="M 0 4 L 8 4 L 4 0 Z"
+                                  Fill="#AAA"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Arrow" Property="Data" Value="M 0 0 L 8 4 L 0 8 Z"/>
+                                <Setter TargetName="Arrow" Property="Fill" Value="#FFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         
-        <SolidColorBrush x:Key="SidebarButtonActiveBackground" Color="#22FFFFFF"/>
-        <Color x:Key="PrimaryColor">#111</Color>
-        <Brush x:Key="PrimaryBrush">#111</Brush>
-        <Color x:Key="PanelsColor">#1E1E1E</Color>
-        <Brush x:Key="PanelsBrush">#1E1E1E</Brush>
-        <Color x:Key="PanelsColo2">#252526</Color>
-        <Brush x:Key="PanelsBrush2">#252526</Brush>
-        <Color x:Key="AdditionalColor">#333</Color>
-        <Brush x:Key="AdditionalBrush">#333</Brush>
-        <Color x:Key="AdditionalColor2">#222</Color>
-        <Brush x:Key="AdditionalBrush2">#222</Brush>
-        <Color x:Key="PrimaryAccentColor">DarkRed</Color>
-        <Brush x:Key="PrimaryAccentBrush">DarkRed</Brush>
-        <Color x:Key="PrimaryColorA">#6B4E2C</Color>
-        <Brush x:Key="PrimaryBrushA">#111</Brush>
-        <Color x:Key="PrimaryTextColor">#fff</Color>
-        <Brush x:Key="PrimaryTextBrush">#fff</Brush>
+        <Style x:Key="ModernTreeViewItemStyle" TargetType="TreeViewItem">
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TreeView}}"/>
+            <Setter Property="Padding" Value="2,4"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="IsExpanded" Value="False"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border x:Name="Bd" Grid.Row="0"
+                                    Background="Transparent"
+                                    CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}"
+                                    Margin="{TemplateBinding Margin}">
+                                <Grid>
+                                    <!-- Только один IsChecked! -->
+                                    <ToggleButton x:Name="Expander"
+                                                  Width="16" Height="16"
+                                                  Margin="2,0,6,0"
+                                                  VerticalAlignment="Center"
+                                                  Style="{StaticResource ModernTreeViewExpanderStyle}"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                  Visibility="{Binding HasItems, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"/>
+
+                                    <ContentPresenter x:Name="PART_Header"
+                                                      Margin="24,0,0,0"
+                                                      ContentSource="Header"
+                                                      VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Дочерние элементы -->
+                            <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Margin="19,0,0,0"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+
+                            <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#22FFFFFF"/>
+                            </Trigger>
+
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#40FFFFFF"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
-    
-    
 </Application>

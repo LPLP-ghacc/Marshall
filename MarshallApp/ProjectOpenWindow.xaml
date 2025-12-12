@@ -56,7 +56,7 @@
                      ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
 
             <Border Grid.Row="1" Margin="0,0,5,5" BorderThickness="0,1,0,0" BorderBrush="{StaticResource SidebarButtonActiveBackground}">
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Border Margin="2" Background="Blue" CornerRadius="5">
                         <Button Content="Open" Width="80" Click="Open_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
                     </Border>

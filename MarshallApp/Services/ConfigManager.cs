@@ -171,6 +171,8 @@ public static class ConfigManager
 
             Canvas.SetLeft(block, cfg.X);
             Canvas.SetTop(block, cfg.Y);
+            
+            block.RestoreLoopState();
 
             if (!string.IsNullOrEmpty(cfg.PythonFilePath))
                 _ = block.RunPythonScript();

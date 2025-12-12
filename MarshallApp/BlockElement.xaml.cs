@@ -18,240 +18,6 @@ namespace MarshallApp;
 
 public partial class BlockElement
 {
-    public double WidthUnits { get; set; }
-    public double HeightUnits { get; set; }
-    private Point _mouseOffset;
-    public const double GridSize = 15;
-    private const double BaseBlockSize = 500;
-    private bool _isResizing;
-    private ResizeDirection _resizeDir = ResizeDirection.None;
-    private enum ResizeDirection
-    {
-        None,
-        Left,
-        Right,
-        Top,
-        Bottom,
-        TopLeft,
-        TopRight,
-        BottomLeft,
-        BottomRight
-    }
-
-    public static double Snap(double value)
-    {
-        return Math.Round(value / GridSize) * GridSize;
-    }
-    
-    private void UserControl_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.LeftButton != MouseButtonState.Pressed)
-            return;
-
-        var pos = e.GetPosition(this);
-
-        // --- TRY START RESIZE ---
-        _resizeDir = GetResizeDirection(pos, 8);
-        if (_resizeDir != ResizeDirection.None)
-        {
-            _isResizing = true;
-            CaptureMouse();
-            e.Handled = true;
-            return;
-        }
-
-        // --- START DRAG ---
-        _mouseOffset = pos;
-        _isDragging = true;
-        CaptureMouse();
-        e.Handled = true;
-    }
-
-    private void UserControl_MouseMove(object sender, MouseEventArgs e)
-    {
-        if (VisualTreeHelper.GetParent(this) is not Canvas canvas) return;
-    
-        var pos = e.GetPosition(this);
-    
-        const double edge = 8;
-    
-        if (!_isResizing && !_isDragging)
-        {
-            _resizeDir = GetResizeDirection(pos, edge);
-    
-            Cursor = _resizeDir switch
-            {
-                ResizeDirection.Left => Cursors.SizeWE,
-                ResizeDirection.Right => Cursors.SizeWE,
-                ResizeDirection.Top => Cursors.SizeNS,
-                ResizeDirection.Bottom => Cursors.SizeNS,
-                ResizeDirection.TopLeft => Cursors.SizeNWSE,
-                ResizeDirection.TopRight => Cursors.SizeNESW,
-                ResizeDirection.BottomLeft => Cursors.SizeNESW,
-                ResizeDirection.BottomRight => Cursors.SizeNWSE,
-                _ => Cursors.Arrow
-            };
-    
-            if (Cursor != Cursors.Arrow)
-            {
-                e.Handled = true;
-                return;
-            }
-        }
-    
-        // ----- RESIZING -----
-        if (_isResizing && e.LeftButton == MouseButtonState.Pressed)
-        {
-            var globalPos = e.GetPosition(canvas);
-    
-            var left = Canvas.GetLeft(this);
-            var top = Canvas.GetTop(this);
-            var right = left + Width;
-            var bottom = top + Height;
-
-            switch (_resizeDir)
-            {
-                // horizon
-                case ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft:
-                {
-                    var newLeft = GridUtils.Snap(globalPos.X);
-
-                    if (newLeft < 0) newLeft = 0;
-                    if (newLeft > right - GridSize) newLeft = right - GridSize;
-
-                    var newWidth = right - newLeft;
-                    if (newWidth > GridSize)
-                    {
-                        Width = newWidth;
-                        Canvas.SetLeft(this, newLeft);
-                    }
-                    break;
-                }
-                case ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight:
-                {
-                    var newRight = GridUtils.Snap(globalPos.X);
-                    
-                    if (newRight > canvas.Width) newRight = canvas.Width;
-                    if (newRight < left + GridSize) newRight = left + GridSize;
-
-                    var newWidth = newRight - left;
-                    if (newWidth > GridSize)
-                        Width = newWidth;
-
-                    break;
-                }
-            }
-
-            switch (_resizeDir)
-            {
-                // vertical
-                case ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight:
-                {
-                    var newTop = GridUtils.Snap(globalPos.Y);
-                    if (newTop < 0) newTop = 0;
-                    if (newTop > bottom - GridSize) newTop = bottom - GridSize;
-                    var newHeight = bottom - newTop;
-                    if (newHeight > GridSize)
-                    {
-                        Height = newHeight;
-                        Canvas.SetTop(this, newTop);
-                    }
-
-                    break;
-                }
-                case ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight:
-                {
-                    var newBottom = GridUtils.Snap(globalPos.Y);
-                    var newHeight = newBottom - top;
-                    if (newHeight > GridSize)
-                        Height = newHeight;
-                    break;
-                }
-            }
-    
-            e.Handled = true;
-            return;
-        }
-    
-        // ----- DRAG -----
-        if (!_isDragging || e.LeftButton != MouseButtonState.Pressed) return;
-        DragMove(e, canvas);
-        e.Handled = true;
-    }
-    
-    private ResizeDirection GetResizeDirection(Point pos, double edge)
-    {
-        var left = pos.X <= edge;
-        var right = pos.X >= ActualWidth - edge;
-        var top = pos.Y <= edge;
-        var bottom = pos.Y >= ActualHeight - edge;
-
-        return (left, right, top, bottom) switch
-        {
-            (true, false, true, false) => ResizeDirection.TopLeft,
-            (false, true, true, false) => ResizeDirection.TopRight,
-            (true, false, false, true) => ResizeDirection.BottomLeft,
-            (false, true, false, true) => ResizeDirection.BottomRight,
-            (true, false, false, false) => ResizeDirection.Left,
-            (false, true, false, false) => ResizeDirection.Right,
-            (false, false, true, false) => ResizeDirection.Top,
-            (false, false, false, true) => ResizeDirection.Bottom,
-            _ => ResizeDirection.None
-        };
-    }
-    
-    private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        var wasResizingOrDragging = _isResizing || _isDragging;
-
-        if (_isResizing)
-        {
-            _isResizing = false;
-        }
-
-        if (_isDragging)
-        {
-            _isDragging = false;
-        }
-
-        ReleaseMouseCapture();
-
-        if (wasResizingOrDragging)
-        {
-            WidthUnits = Math.Max(1, Math.Round(Width / GridSize));
-            HeightUnits = Math.Max(1, Math.Round(Height / GridSize));
-        }
-
-        e.Handled = true;
-    }
-    
-    private void DragMove(MouseEventArgs e, Canvas canvas)
-    {
-        var pos = e.GetPosition(canvas);
-
-        var newLeft = GridUtils.Snap(pos.X - _mouseOffset.X);
-        var newTop = GridUtils.Snap(pos.Y - _mouseOffset.Y);
-
-        if (newLeft < 0) newLeft = 0;
-        if (newTop < 0) newTop = 0;
-
-        Canvas.SetLeft(this, newLeft);
-        Canvas.SetTop(this, newTop);
-    }
-    
-    private void BlockElement_OnMouseEnter(object sender, MouseEventArgs e)
-    {
-        //MainBorder.BorderThickness = new Thickness(2);
-    }
-    
-    private void BlockElement_OnMouseLeave(object sender, MouseEventArgs e)
-    {
-        //MainBorder.BorderThickness = new Thickness(1);
-    }
-}
-
-public partial class BlockElement
-{
     public string? FilePath;
     public bool IsLooping;
     public double LoopInterval { get; set; } = 5.0;
@@ -666,30 +432,69 @@ public partial class BlockElement
         }
     }
     
-    private async void AutoInstallMissingModule(string output)
+    private void AutoInstallMissingModule(string errorText)
     {
-        try
+        var module = DetectMissingModule(errorText);
+        if (string.IsNullOrEmpty(module)) return;
+
+        if (errorText.Contains($"pip install {module}")) return;
+
+        Dispatcher.Invoke(async () =>
         {
-            if (!output.Contains("No module named")) return;
-            
-            var missingModule = ParseMissingModule(output);
-            if (string.IsNullOrEmpty(missingModule)) return;
-            
-            Dispatcher.Invoke(() => OutputText.Text += $"\n[AutoFix] Installing missing module: {missingModule}...\n");
-            var installed = await InstallPythonPackage(missingModule);
-            if (installed)
+            OutputText.Text += $"\nМодуль '{module}' не найден. Устанавливаю...\n";
+
+            var psi = new ProcessStartInfo
             {
-                Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Successfully installed {missingModule}. Restarting script...\n");
-                await Dispatcher.Invoke(RunPythonScript);
-            }
-            else
+                FileName = "python",
+                Arguments = $"-m pip install {module}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            try
             {
-                Dispatcher.Invoke(() => OutputText.Text += $"[AutoFix] Failed to install {missingModule}.\n");
+                using var process = Process.Start(psi);
+                if (process != null)
+                {
+                    var output = await process.StandardOutput.ReadToEndAsync();
+                }
+
+                if (process != null)
+                {
+                    var error = await process.StandardError.ReadToEndAsync();
+                    await process.WaitForExitAsync();
+
+                    if (process.ExitCode == 0)
+                    {
+                        OutputText.Text += $"Успешно установлен: {module}\nПерезапускаю скрипт...\n";
+                        await Task.Delay(800);
+                        _ = RunPythonScript();
+                    }
+                    else
+                    {
+                        OutputText.Text += $"Ошибка установки {module}:\n{error}\n";
+                    }
+                }
             }
-        }
-        catch (Exception ex)
+            catch (Exception ex)
+            {
+                OutputText.Text += $"Не удалось установить {module}: {ex.Message}\n";
+            }
+        });
+        return;
+
+        string? DetectMissingModule(string text)
         {
-            SendExceptionMessage(ex);
+            var patterns = new[]
+            {
+                """ModuleNotFoundError: No module named ['"]([^'"]+)['"]""",
+                @"ImportError: No module named ([^\s]+)",
+                """No module named ['"]([^'"]+)['"]"""
+            };
+
+            return (from pattern in patterns select System.Text.RegularExpressions.Regex.Match(text, pattern) into match where match.Success select match.Groups[1].Value).FirstOrDefault();
         }
     }
     
@@ -769,5 +574,240 @@ public partial class BlockElement
         {
             return false;
         }
+    }
+}
+
+// Drag&Resize
+public partial class BlockElement
+{
+    public double WidthUnits { get; set; }
+    public double HeightUnits { get; set; }
+    private Point _mouseOffset;
+    public const double GridSize = 15;
+    private const double BaseBlockSize = 500;
+    private bool _isResizing;
+    private ResizeDirection _resizeDir = ResizeDirection.None;
+    private enum ResizeDirection
+    {
+        None,
+        Left,
+        Right,
+        Top,
+        Bottom,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
+
+    public static double Snap(double value)
+    {
+        return Math.Round(value / GridSize) * GridSize;
+    }
+    
+    private void UserControl_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        var pos = e.GetPosition(this);
+
+        // --- TRY START RESIZE ---
+        _resizeDir = GetResizeDirection(pos, 8);
+        if (_resizeDir != ResizeDirection.None)
+        {
+            _isResizing = true;
+            CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
+        // --- START DRAG ---
+        _mouseOffset = pos;
+        _isDragging = true;
+        CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void UserControl_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (VisualTreeHelper.GetParent(this) is not Canvas canvas) return;
+    
+        var pos = e.GetPosition(this);
+    
+        const double edge = 8;
+    
+        if (!_isResizing && !_isDragging)
+        {
+            _resizeDir = GetResizeDirection(pos, edge);
+    
+            Cursor = _resizeDir switch
+            {
+                ResizeDirection.Left => Cursors.SizeWE,
+                ResizeDirection.Right => Cursors.SizeWE,
+                ResizeDirection.Top => Cursors.SizeNS,
+                ResizeDirection.Bottom => Cursors.SizeNS,
+                ResizeDirection.TopLeft => Cursors.SizeNWSE,
+                ResizeDirection.TopRight => Cursors.SizeNESW,
+                ResizeDirection.BottomLeft => Cursors.SizeNESW,
+                ResizeDirection.BottomRight => Cursors.SizeNWSE,
+                _ => Cursors.Arrow
+            };
+    
+            if (Cursor != Cursors.Arrow)
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+    
+        // ----- RESIZING -----
+        if (_isResizing && e.LeftButton == MouseButtonState.Pressed)
+        {
+            var globalPos = e.GetPosition(canvas);
+    
+            var left = Canvas.GetLeft(this);
+            var top = Canvas.GetTop(this);
+            var right = left + Width;
+            var bottom = top + Height;
+
+            switch (_resizeDir)
+            {
+                // horizon
+                case ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft:
+                {
+                    var newLeft = GridUtils.Snap(globalPos.X);
+
+                    if (newLeft < 0) newLeft = 0;
+                    if (newLeft > right - GridSize) newLeft = right - GridSize;
+
+                    var newWidth = right - newLeft;
+                    if (newWidth > GridSize)
+                    {
+                        Width = newWidth;
+                        Canvas.SetLeft(this, newLeft);
+                    }
+                    break;
+                }
+                case ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight:
+                {
+                    var newRight = GridUtils.Snap(globalPos.X);
+                    
+                    if (newRight > canvas.Width) newRight = canvas.Width;
+                    if (newRight < left + GridSize) newRight = left + GridSize;
+
+                    var newWidth = newRight - left;
+                    if (newWidth > GridSize)
+                        Width = newWidth;
+
+                    break;
+                }
+            }
+
+            switch (_resizeDir)
+            {
+                // vertical
+                case ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight:
+                {
+                    var newTop = GridUtils.Snap(globalPos.Y);
+                    if (newTop < 0) newTop = 0;
+                    if (newTop > bottom - GridSize) newTop = bottom - GridSize;
+                    var newHeight = bottom - newTop;
+                    if (newHeight > GridSize)
+                    {
+                        Height = newHeight;
+                        Canvas.SetTop(this, newTop);
+                    }
+
+                    break;
+                }
+                case ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight:
+                {
+                    var newBottom = GridUtils.Snap(globalPos.Y);
+                    var newHeight = newBottom - top;
+                    if (newHeight > GridSize)
+                        Height = newHeight;
+                    break;
+                }
+            }
+    
+            e.Handled = true;
+            return;
+        }
+    
+        // ----- DRAG -----
+        if (!_isDragging || e.LeftButton != MouseButtonState.Pressed) return;
+        DragMove(e, canvas);
+        e.Handled = true;
+    }
+    
+    private ResizeDirection GetResizeDirection(Point pos, double edge)
+    {
+        var left = pos.X <= edge;
+        var right = pos.X >= ActualWidth - edge;
+        var top = pos.Y <= edge;
+        var bottom = pos.Y >= ActualHeight - edge;
+
+        return (left, right, top, bottom) switch
+        {
+            (true, false, true, false) => ResizeDirection.TopLeft,
+            (false, true, true, false) => ResizeDirection.TopRight,
+            (true, false, false, true) => ResizeDirection.BottomLeft,
+            (false, true, false, true) => ResizeDirection.BottomRight,
+            (true, false, false, false) => ResizeDirection.Left,
+            (false, true, false, false) => ResizeDirection.Right,
+            (false, false, true, false) => ResizeDirection.Top,
+            (false, false, false, true) => ResizeDirection.Bottom,
+            _ => ResizeDirection.None
+        };
+    }
+    
+    private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var wasResizingOrDragging = _isResizing || _isDragging;
+
+        if (_isResizing)
+        {
+            _isResizing = false;
+        }
+
+        if (_isDragging)
+        {
+            _isDragging = false;
+        }
+
+        ReleaseMouseCapture();
+
+        if (wasResizingOrDragging)
+        {
+            WidthUnits = Math.Max(1, Math.Round(Width / GridSize));
+            HeightUnits = Math.Max(1, Math.Round(Height / GridSize));
+        }
+
+        e.Handled = true;
+    }
+    
+    private void DragMove(MouseEventArgs e, Canvas canvas)
+    {
+        var pos = e.GetPosition(canvas);
+
+        var newLeft = GridUtils.Snap(pos.X - _mouseOffset.X);
+        var newTop = GridUtils.Snap(pos.Y - _mouseOffset.Y);
+
+        if (newLeft < 0) newLeft = 0;
+        if (newTop < 0) newTop = 0;
+
+        Canvas.SetLeft(this, newLeft);
+        Canvas.SetTop(this, newTop);
+    }
+    
+    private void BlockElement_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        //MainBorder.BorderThickness = new Thickness(2);
+    }
+    
+    private void BlockElement_OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        //MainBorder.BorderThickness = new Thickness(1);
     }
 }
