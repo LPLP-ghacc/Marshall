@@ -81,8 +81,8 @@ public static class ConfigManager
             
             MainWindow.Instance?.Dispatcher.Invoke(() =>
             {
-                MainWindow.Instance!.CurrentProject = project;
-                MainWindow.Instance!.SetProjectName(project.ProjectName);
+                MainWindow.Instance.CurrentProject = project;
+                MainWindow.Instance.SetProjectName(project.ProjectName);
                 LoadBlocksFromProject(project);
             });
             

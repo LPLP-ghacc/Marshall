@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using MarshallApp.Models;
@@ -9,7 +8,7 @@ using MarshallApp.Services;
 
 namespace MarshallApp;
 
-public partial class ProjectOpenWindow : Window
+public partial class ProjectOpenWindow
 {
     public Project? ResultProject { get; private set; }
     
@@ -102,7 +101,7 @@ public partial class ProjectOpenWindow : Window
             
             selector.HorizontalContentAlignment = HorizontalAlignment.Left;
             
-            selector.Loaded += (s, e) =>
+            selector.Loaded += (_, _) =>
             {
                 if (selector.ContentTemplate?.FindName("PART_ContentPresenter", selector) is ContentPresenter cp)
                 {

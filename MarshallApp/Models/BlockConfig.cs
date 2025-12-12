@@ -2,15 +2,15 @@
 {
     public class BlockConfig
     {
-        public string? PythonFilePath { get; set; }
-        public bool IsLooping { get; set; }
-        public double LoopIntervalSeconds { get; set; } = 5.0;
+        public string? PythonFilePath { get; init; }
+        public bool IsLooping { get; init; }
+        public double LoopIntervalSeconds { get; init; } = 5.0;
 
-        public double OutputFontSize { get; set; } = 14.0; 
+        public double OutputFontSize { get; init; } = 14.0; 
         
-        public double X { get; set; }
-        public double Y { get; set; }
-        public double WidthUnits { get; set; }
-        public double HeightUnits { get; set; }
+        public double X { get; init; }
+        public double Y { get; init; }
+        public double WidthUnits { get; init; }
+        public double HeightUnits { get; init; }
     }
 }

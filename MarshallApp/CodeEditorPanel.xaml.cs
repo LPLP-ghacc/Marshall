@@ -93,20 +93,29 @@ public partial class CodeEditorPanel
 
     private bool ConfirmUnsavedChanges()
     {
-        if (string.IsNullOrWhiteSpace(Editor.Text)) return true;
-        var result = MessageBox.Show("Save changes before continuing?",
-            "Confirm", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        if (string.IsNullOrWhiteSpace(Editor.Text)) 
+            return true;
+
+        var result = MessageBox.Show(
+            "Save changes before continuing?",
+            "Confirm",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
 
         switch (result)
         {
             case MessageBoxResult.Cancel:
                 return false;
+
             case MessageBoxResult.Yes:
                 SaveScript(false);
                 break;
+
+            case MessageBoxResult.No:
             default:
-                throw new ArgumentOutOfRangeException();
+                break;
         }
+
         return true;
     }
 

@@ -7,6 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resource\Icons\IconSmall.ico</ApplicationIcon>
+    <AssemblyName>Marshall</AssemblyName>
+    <Title>Marshall</Title>
+    <Authors>LPLP</Authors>
+    <Description>Marshall: Python Script Management Application</Description>
+    <PackageLicenseUrl>https://github.com/LPLP-ghacc/Marshall/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/LPLP-ghacc/Marshall</RepositoryUrl>
+    <PackageTags>csharp, wpf, python3, automatization </PackageTags>
+    <Company>(no company)</Company>
+    <Product>Marshall</Product>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,13 +55,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resource\Darken.ps">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
     <None Remove="Resource\Darken.ps.bytes" />
-    <Resource Include="Resource\Darken.ps.bytes">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
   </ItemGroup>
 
   <ItemGroup>

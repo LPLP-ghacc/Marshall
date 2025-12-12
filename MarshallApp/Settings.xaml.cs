@@ -3,14 +3,14 @@ using System.Windows.Input;
 
 namespace MarshallApp;
 
-public partial class Settings : Window
+public partial class Settings
 {
-    public static Settings? Instanse;
+    public static Settings? Instance;
     public Settings()
     {
         InitializeComponent();
 
-        Instanse = this;
+        Instance = this;
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)

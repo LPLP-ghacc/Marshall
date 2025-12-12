@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using System.Drawing;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using MarshallApp.Models;
@@ -8,7 +6,7 @@ using MarshallApp.Services;
 
 namespace MarshallApp;
 
-public partial class ScriptBrowserPanel : UserControl
+public partial class ScriptBrowserPanel
 {
     private BlockConfig? _selectedBlock;
     

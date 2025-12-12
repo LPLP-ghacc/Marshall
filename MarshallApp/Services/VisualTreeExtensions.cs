@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 
-namespace MarshallApp;
+namespace MarshallApp.Services;
 
 public static class VisualTreeExtensions
 {

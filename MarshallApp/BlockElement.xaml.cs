@@ -548,7 +548,7 @@ public partial class BlockElement
 // extension part
 public partial class BlockElement
 {
-    public void SetFileNameText()
+    private void SetFileNameText()
     {
         if (!string.IsNullOrEmpty(FilePath))
             FileNameText.Text = Path.GetFileNameWithoutExtension(FilePath);

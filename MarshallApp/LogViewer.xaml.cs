@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace MarshallApp;
 
-public partial class LogViewer : Window
+public partial class LogViewer
 {
     public LogViewer(string scriptName, string output)
     {

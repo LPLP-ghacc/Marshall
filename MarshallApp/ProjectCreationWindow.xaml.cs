@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using MarshallApp.Models;
@@ -9,7 +8,7 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace MarshallApp;
 
-public partial class ProjectCreationWindow : Window
+public partial class ProjectCreationWindow
 {
     public Project? ResultProject { get; private set; }
     
@@ -37,7 +36,7 @@ public partial class ProjectCreationWindow : Window
             var name = ProjectNameBox.Text.Trim();
             var baseFolder = LocationBox.Text.Trim();
         
-            var projectFolder = System.IO.Path.Combine(baseFolder, name);
+            var projectFolder = Path.Combine(baseFolder, name);
             var file = Path.Combine(projectFolder, name + ProjectManager.ProjectExtension);
             FinalPathLabel.Text = file;
         });
@@ -52,7 +51,7 @@ public partial class ProjectCreationWindow : Window
             !string.IsNullOrWhiteSpace(LocationBox.Text))
         {
             FinalPathLabel.Text = 
-                System.IO.Path.Combine(LocationBox.Text, ProjectNameBox.Text);
+                Path.Combine(LocationBox.Text, ProjectNameBox.Text);
         }
 
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(baseFolder))
@@ -61,7 +60,7 @@ public partial class ProjectCreationWindow : Window
             return;
         }
 
-        var projectFolder = System.IO.Path.Combine(baseFolder, name);
+        var projectFolder = Path.Combine(baseFolder, name);
 
         ResultProject = ProjectManager.CreateNewProject(projectFolder, name);
         var file = Path.Combine(projectFolder, name + ProjectManager.ProjectExtension);
