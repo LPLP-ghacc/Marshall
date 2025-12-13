@@ -21,10 +21,10 @@
             </Grid.RowDefinitions>
             <Grid Row="0" Margin="5">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                    <Border Margin="2" Background="{StaticResource DarkBlueTextBrush}" CornerRadius="5">
                         <Button Content="Open Project" Width="80" Click="Open_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
                     </Border>
-                    <Border Margin="2" Background="#470037EA" CornerRadius="5">
+                    <Border Margin="2" Background="{StaticResource DarkBlueTextBrush}" CornerRadius="5">
                         <Button Content="New Project" Width="80" Click="New_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>
                     </Border>
                     <Button Content="Browse..." Width="80" Click="Browse_Click" Margin="2" Style="{StaticResource FlatButtonStyle}"/>

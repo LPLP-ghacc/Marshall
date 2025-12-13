@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Windows;
-using System.Windows.Media;
 
 namespace MarshallApp;
 
@@ -45,7 +44,7 @@ public partial class CodeEditorPanel
 
     private static string GetInitialScriptsDirectory()
     {
-        return MainWindow.Instance?.CurrentProject?.ProjectPath != null ? Path.Combine(MainWindow.Instance.CurrentProject.ProjectPath, "Scripts") : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return MainWindow.Instance.CurrentProject?.ProjectPath != null ? Path.Combine(MainWindow.Instance.CurrentProject.ProjectPath, "Scripts") : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     }
 
     private void OpenButton_Click(object sender, RoutedEventArgs e)
@@ -124,13 +123,5 @@ public partial class CodeEditorPanel
         }
 
         return true;
-    }
-
-    private T? FindParent<T>() where T : DependencyObject
-    {
-        DependencyObject? parent = this;
-        while(parent != null && parent is not T)
-            parent = VisualTreeHelper.GetParent(parent);
-        return parent as T;
     }
 }

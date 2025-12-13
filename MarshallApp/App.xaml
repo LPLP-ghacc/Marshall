@@ -7,6 +7,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         
         <SolidColorBrush x:Key="SidebarButtonActiveBackground" Color="#22FFFFFF"/>
+        
         <Color x:Key="PrimaryColor">#111</Color>
         <Brush x:Key="PrimaryBrush">#111</Brush>
         <Color x:Key="PanelsColor">#1E1E1E</Color>
@@ -23,6 +24,8 @@
         <Brush x:Key="PrimaryBrushA">#111</Brush>
         <Color x:Key="PrimaryTextColor">#fff</Color>
         <Brush x:Key="PrimaryTextBrush">#fff</Brush>
+        <Color x:Key="DarkBlueTextColor">#470037EA</Color>
+        <Brush x:Key="DarkBlueTextBrush">#470037EA</Brush>
         
         
         <Style x:Key="FlatButtonStyle" TargetType="Button">
@@ -500,5 +503,156 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        
+        <Style x:Key="FlatComboToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{StaticResource DarkBlueTextBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="FlatComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Background" Value="{StaticResource DarkBlueTextBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton
+                                x:Name="MainToggle"
+                                Style="{StaticResource FlatComboToggleButtonStyle}"
+                                IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                ClickMode="Press">
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="24" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        x:Name="OuterBorder"
+                                        Grid.ColumnSpan="2"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="4"/>
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Margin="8,0,4,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource FlatTextBlockStyle}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        Text="{Binding SelectionBoxItem, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <Path
+                                        x:Name="Arrow"
+                                        Grid.Column="1"
+                                        Data="M 0 0 L 4 4 L 8 0"
+                                        Stroke="White"
+                                        StrokeThickness="1.5"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                </Grid>
+                            </ToggleButton>
+                            <Popup
+                                IsOpen="{TemplateBinding IsDropDownOpen}"
+                                Placement="Bottom"
+                                AllowsTransparency="True"
+                                Focusable="False"
+                                PopupAnimation="Fade">
+                                <Border
+                                    Background="#252526"
+                                    BorderBrush="#444"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="2">
+                                    <ScrollViewer>
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="OuterBorder"
+                                        Property="BorderBrush"
+                                        Value="#0037EA"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="180" CenterX="4" CenterY="2"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="FlatCheckBoxStyle" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border
+                            x:Name="Box"
+                            Width="16"
+                            Height="16"
+                            Background="#1E1E1E"
+                            BorderBrush="#666"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Margin="0,0,8,0">
+                            <Path
+                                x:Name="CheckMark"
+                                Data="M 2 8 L 6 12 L 14 2"
+                                Stroke="White"
+                                StrokeThickness="2"
+                                Visibility="Collapsed"/>
+                        </Border>
+
+                        <ContentPresenter
+                            VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource DarkBlueTextBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="#888"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Box" Property="Opacity" Value="0.5"/>
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     </Application.Resources>
 </Application>

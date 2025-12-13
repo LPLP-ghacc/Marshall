@@ -4,7 +4,6 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using MarshallApp.Models;
 using MarshallApp.Services;
-using System.Windows.Forms;
 using MessageBox = System.Windows.MessageBox;
 
 namespace MarshallApp;
@@ -24,7 +23,7 @@ public partial class ProjectCreationWindow
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
         using var dialog = new FolderBrowserDialog();
-        if (MainWindow.Instance != null) dialog.InitialDirectory = MainWindow.Instance._defaultMarshallProjectsPath;
+        dialog.InitialDirectory = MainWindow.Instance.DefaultMarshallProjectsPath;
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
             LocationBox.Text = dialog.SelectedPath;
@@ -77,9 +76,6 @@ public partial class ProjectCreationWindow
 
     private void Browse_Click(object sender, RoutedEventArgs e)
     {
-        var mainWindow = MainWindow.Instance;
-        if (mainWindow == null) return;
-        
         var dialog = new OpenFileDialog
         {
             Filter = "Marshall Project (*.mpr)|*.mpr",

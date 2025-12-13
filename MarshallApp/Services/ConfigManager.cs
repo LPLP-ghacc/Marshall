@@ -66,11 +66,8 @@ public static class ConfigManager
             AppConfig = await Load();
 
             var instance = MainWindow.Instance;
-            if (instance != null)
-            {
-                if (AppConfig.WindowWidth > 0) instance.Width = AppConfig.WindowWidth;
-                if (AppConfig.WindowHeight > 0) instance.Height = AppConfig.WindowHeight;
-            }
+            if (AppConfig.WindowWidth > 0) instance.Width = AppConfig.WindowWidth;
+            if (AppConfig.WindowHeight > 0) instance.Height = AppConfig.WindowHeight;
 
             if (string.IsNullOrEmpty(AppConfig.LastProjectPath) || !File.Exists(AppConfig.LastProjectPath))
             {
@@ -79,14 +76,14 @@ public static class ConfigManager
             }
             var project = ProjectManager.LoadProject(AppConfig.LastProjectPath);
             
-            MainWindow.Instance?.Dispatcher.Invoke(() =>
+            MainWindow.Instance.Dispatcher.Invoke(() =>
             {
                 MainWindow.Instance.CurrentProject = project;
                 MainWindow.Instance.SetProjectName(project.ProjectName);
                 LoadBlocksFromProject(project);
             });
             
-            $"Project {instance?.CurrentProject?.ProjectName} has been opened.".Log();
+            $"Project {instance.CurrentProject?.ProjectName} has been opened.".Log();
         }
         catch (Exception e)
         {
@@ -97,8 +94,7 @@ public static class ConfigManager
     public static void SaveAppConfig()
     {
         var instance = MainWindow.Instance;
-        Debug.Assert(instance != null, nameof(instance) + " != null");
-
+        
         AppConfig ??= AppConfig.Default;
 
         AppConfig.WindowWidth = instance.Width;

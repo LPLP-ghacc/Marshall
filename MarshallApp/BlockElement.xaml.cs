@@ -37,20 +37,25 @@ public partial class BlockElement
     public BlockElement(Action<BlockElement>? removeCallback, LimitSettings limitSettings)
     {
         InitializeComponent();
-        
-        Width = BaseBlockSize;
-        Height = BaseBlockSize;
 
-        SetFileNameText("(empty)");
+        var baseBlockSize = MainWindow.Instance.Settings!.BaseBlockSize;
+
+        Width = baseBlockSize;
+        Height = baseBlockSize;
+        
         WidthUnits = Math.Max(1, Math.Round(Width / GridSize));
         HeightUnits = Math.Max(1, Math.Round(Height / GridSize));
         
         Width = WidthUnits * GridSize;
         Height = HeightUnits * GridSize;
         
+        var fontFamily = MainWindow.Instance.Settings.FontFamily ?? "Consolas";
+        OutputText.FontFamily = new FontFamily(fontFamily);
+        
         _removeCallback = removeCallback;
         _jobManager = new JobManager(limitSettings);
         
+        SetFileNameText("(empty)");
         _iconsPath = Path.Combine(Environment.CurrentDirectory + "/Resource/Icons/");
         UpdateLoopIcon(IsLooping);
         
@@ -101,7 +106,7 @@ public partial class BlockElement
             {
                 var text = new string(buffer, 0, charsRead);
 
-                AutoInstallMissingModule(text);
+                if(MainWindow.Instance.Settings!.IsEnableAutoModuleInstall) AutoInstallMissingModule(text);
             
                 Dispatcher.Invoke(() =>
                 {
@@ -151,10 +156,13 @@ public partial class BlockElement
             _activeProcess?.Dispose();
             _activeProcess = null;
         }
-        
-        // Sayonara
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+
+        if (MainWindow.Instance.Settings!.IsEnableGcCollect)
+        {
+            // Sayonara
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
     }
     
     #region top menu buttons
@@ -362,7 +370,7 @@ public partial class BlockElement
     
     private void CallLogViewer_Click(object sender, RoutedEventArgs e)
     {
-        MainWindow.Instance?.ShowLogViewer(this);
+        MainWindow.Instance.ShowLogViewer(this);
     }
 
     private void SendExceptionMessage(Exception ex)
@@ -500,7 +508,7 @@ public partial class BlockElement
     
     private static void OpenPythonInstallerPage()
     {
-        if (!IsPythonInstalled())
+        if (!IsPythonInstalled() && !MainWindow.Instance.Settings!.OpenPythonInstallationPage)
         {
             Process.Start(new ProcessStartInfo
             {
@@ -542,7 +550,6 @@ public partial class BlockElement
     public double HeightUnits { get; set; }
     private Point _mouseOffset;
     public const double GridSize = 15;
-    private const double BaseBlockSize = 500;
     private bool _isResizing;
     private ResizeDirection _resizeDir = ResizeDirection.None;
     private enum ResizeDirection

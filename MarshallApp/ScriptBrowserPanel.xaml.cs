@@ -202,11 +202,11 @@ public partial class ScriptBrowserPanel
     {
         if (_selectedBlock?.PythonFilePath == null) return;
 
-        var mw = MainWindow.Instance;
+        var mainWindow = MainWindow.Instance;
 
-        mw!.CodeEditor.LoadFile(_selectedBlock.PythonFilePath);
+        mainWindow.CodeEditor.LoadFile(_selectedBlock.PythonFilePath);
 
-        mw.OpenUiElement(mw.CodeEditor, mw.CodeEditorShowButton);
+        mainWindow.OpenUiElement(mainWindow.CodeEditor, mainWindow.CodeEditorShowButton);
     }
 
     private void Open_Click(object sender, RoutedEventArgs e)
@@ -219,7 +219,6 @@ public partial class ScriptBrowserPanel
         };
 
         if (window.ShowDialog() != true) return;
-        if (mainWindow == null) return;
         mainWindow.CurrentProject = window.ResultProject;
         mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
         if (mainWindow.CurrentProject != null) ConfigManager.LoadBlocksFromProject(mainWindow.CurrentProject);
@@ -237,7 +236,6 @@ public partial class ScriptBrowserPanel
         };
         
         if (window.ShowDialog() != true) return;
-        if (mainWindow == null) return;
         mainWindow.CurrentProject = window.ResultProject;
         mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
         ConfigManager.SaveAppConfig();
@@ -253,12 +251,11 @@ public partial class ScriptBrowserPanel
             Filter = "Marshall Project (*.mpr)|*.mpr",
             Title = "Open Marshall Project"
         };
-        if (MainWindow.Instance != null) dialog.InitialDirectory = MainWindow.Instance._defaultMarshallProjectsPath;
+        dialog.InitialDirectory = MainWindow.Instance.DefaultMarshallProjectsPath;
         if (dialog.ShowDialog()  != DialogResult.OK) return;
         
         var mainWindow = MainWindow.Instance;
-        if (mainWindow == null) return;
-        
+
         ConfigManager.SaveAppConfig();
         var project = ProjectManager.LoadProject(dialog.FileName);
         ConfigManager.AddRecentProject(dialog.FileName);

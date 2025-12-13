@@ -27,16 +27,19 @@ namespace MarshallApp;
 
 public partial class MainWindow : INotifyPropertyChanged
 {
-    public readonly string _defaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
+    private AppResourceMonitor _appResourceMonitor;
+    public UserSettings? Settings;
+    public readonly string DefaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
     private NotifyIcon? _trayIcon;
     public readonly List<BlockElement> Blocks = [];
     private WallpaperController? _wallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
     private readonly DispatcherTimer _loggerTimer = new();
+    private readonly DispatcherTimer _appResourceMonitorTimer = new();
     public LimitSettings LimitSettings { get; } = new(10, 300);
     public Project? CurrentProject { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
-    public static MainWindow? Instance { get; private set; }
+    public static MainWindow Instance { get; private set; } = null!;
 
     private readonly List<UIElement> _mainFieldElements = [];
 
@@ -46,11 +49,12 @@ public partial class MainWindow : INotifyPropertyChanged
         DataContext = this;
         Instance = this;
         
-        if(!Directory.Exists(_defaultMarshallProjectsPath)) Directory.CreateDirectory(_defaultMarshallProjectsPath);
+        if(!Directory.Exists(DefaultMarshallProjectsPath)) Directory.CreateDirectory(DefaultMarshallProjectsPath);
         
         _mainFieldElements.Add(ScriptBrowser);
         _mainFieldElements.Add(MainCanvas);
         _mainFieldElements.Add(CodeEditor);
+        _mainFieldElements.Add(UserSettingsGrid);
         OpenUiElement(MainCanvas, MainCanvasShowButton);
         
         MainCanvas.AllowDrop = true;
@@ -58,7 +62,7 @@ public partial class MainWindow : INotifyPropertyChanged
         MainCanvas.Drop += MStackPanel_Drop;
 
         WallpaperControlInit();
-
+        
         Top.MouseDown += (_, e) =>
         {
             if (e.ChangedButton == MouseButton.Left)
@@ -70,6 +74,15 @@ public partial class MainWindow : INotifyPropertyChanged
         
         Loaded += async (_, _) =>
         {
+            Settings = await SettingsManager.Load();
+            
+            Settings.PropertyChanged += (_, _) =>
+            {
+                SettingsManager.Save(Settings);
+            };
+            
+            SettingsManager.GenerateUI(UserSettingsField, Settings);
+            
             await ConfigManager.LoadAllConfigs();
 
             ScriptBrowser.LoadProjects(ConfigManager.RecentProjects);
@@ -93,13 +106,16 @@ public partial class MainWindow : INotifyPropertyChanged
         InitializeTray();
         InitLoggerTimer();
 
+        _appResourceMonitor = new AppResourceMonitor();
+        InitMonitorTimer();
+
         // Welcome to the home of the mentally ill
         "Hello World!".Log();
     }
 
     public void OpenUiElement(UIElement? obj, object sender)
     {
-        var brush = ((Brush?)Application.Current.FindResource("SidebarButtonActiveBackground"))! ?? throw new InvalidOperationException(); // Господи, прости
+        var brush = ((Brush?)Application.Current.FindResource("SidebarButtonActiveBackground"))! ?? throw new InvalidOperationException();
         
         foreach (var element in _mainFieldElements)
         {
@@ -110,7 +126,8 @@ public partial class MainWindow : INotifyPropertyChanged
         {
             CodeEditorShowButton,
             ScriptBrowserShowButton,
-            MainCanvasShowButton
+            MainCanvasShowButton,
+            SettingsShowButton
         };
 
         foreach (var button in buttons)
@@ -264,7 +281,9 @@ public partial class MainWindow : INotifyPropertyChanged
         OpenUiElement(ScriptBrowser, sender);
     } 
 
-    private void CodeEditorShowButton_OnClick(object sender, RoutedEventArgs e)=> OpenUiElement(CodeEditor, sender);
+    private void CodeEditorShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(CodeEditor, sender);
+    
+    private void SettingsShowButton_OnClick(object sender, RoutedEventArgs e) => OpenUiElement(UserSettingsGrid, sender);
 
     #endregion
 
@@ -449,7 +468,8 @@ public partial class MainWindow : INotifyPropertyChanged
     public void Log(string message)
     {
         Console.WriteLine(message);
-        //message = message.Length > 90 ? message.Remove(90, message.Length) : message;
+
+        if (Settings is { IsEnableLog: false }) return;
         Logger.Text = message;
         _loggerTimer.Start();
     }
@@ -463,6 +483,23 @@ public partial class MainWindow : INotifyPropertyChanged
             _loggerTimer.Stop();
         };
     }
+    
+    private void InitMonitorTimer()
+    {
+        _appResourceMonitorTimer.Interval = TimeSpan.FromSeconds(1);
+        _appResourceMonitorTimer.Tick += async (_, _) =>
+        {
+            var usage = await Task.Run(() => _appResourceMonitor.GetTotalUsage());
+
+            Dispatcher.Invoke(() =>
+            {
+                ResourceMonitorOutput.Text = 
+                    $"CPU: {usage.cpuPercent:F1}%\nRAM: {usage.totalMemoryMB} MB";
+            });
+        };
+        _appResourceMonitorTimer.Start();
+    }
+
 
     private void ProjectContextMenu_OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -518,6 +555,15 @@ public partial class MainWindow : INotifyPropertyChanged
             ProjectContextMenu.Items.Add(selector);
         });
         
+    }
+
+    private void OpenPythonInstallationPage_OnClick(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://www.python.org/downloads/",
+            UseShellExecute = true
+        });
     }
 }
 

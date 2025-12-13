@@ -178,7 +178,7 @@
                 
                 <StackPanel VerticalAlignment="Bottom">
                     <Border CornerRadius="5" Width="30" Height="30" Margin="0,1,0,1">
-                        <Button x:Name="SettingsShowButton" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="MainCanvasShowButton_OnClick">
+                        <Button x:Name="SettingsShowButton" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="SettingsShowButton_OnClick">
                             <Path Data="M0 0h24v24H0z M4 8h4v4h-4z M6 4l0 4 M6 12l0 8 M10 14h4v4h-4z M12 4l0 10 M12 18l0 2 M16 5h4v4h-4z M18 4l0 1 M18 9l0 11" 
                                   Stroke="#CCFFFFFF" 
                                   StrokeThickness="2" 
@@ -205,6 +205,30 @@
                     </Canvas.ContextMenu>
                 </Canvas>
                 <local:CodeEditorPanel x:Name="CodeEditor" Visibility="Collapsed"/>
+                <Grid x:Name="UserSettingsGrid" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource PanelsBrush}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ScrollViewer x:Name="UserSettingsField" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" />
+                    <Grid Grid.Column="1" >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Vertical" Grid.Row="0">
+                            <TextBlock Text="App Resource Monitor: " Style="{StaticResource FlatTextBlockStyle}" FontSize="16"/>
+                            <TextBlock x:Name="ResourceMonitorOutput" Style="{StaticResource FlatTextBlockStyle}" Text="collecting data..." Margin="10"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical" Grid.Row="1">
+                            <Button x:Name="OpenPythonInstallationPage" Style="{StaticResource FlatButtonStyle}" Height="30" Content="Open Python installation page..." Click="OpenPythonInstallationPage_OnClick"/>
+                        </StackPanel>
+                    </Grid>
+                    <Grid Grid.Column="2" >
+                        <local:About></local:About>
+                    </Grid>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

@@ -32,7 +32,7 @@ public partial class ProjectOpenWindow
             Filter = "Marshall Project (*.mpr)|*.mpr",
             Title = "Open Marshall Project"
         };
-        if (MainWindow.Instance != null) dialog.InitialDirectory = MainWindow.Instance._defaultMarshallProjectsPath;
+        dialog.InitialDirectory = MainWindow.Instance.DefaultMarshallProjectsPath;
 
         if (dialog.ShowDialog()  != System.Windows.Forms.DialogResult.OK) return;
         OpenProject(dialog.FileName);
@@ -55,7 +55,7 @@ public partial class ProjectOpenWindow
         ResultProject = ProjectManager.LoadProject(file);
         ConfigManager.AddRecentProject(file);
         
-        MainWindow.Instance?.SetProjectName(ResultProject.ProjectName);
+        MainWindow.Instance.SetProjectName(ResultProject.ProjectName);
         $"Project {ResultProject.ProjectName} has opened.".Log();
     }
     
