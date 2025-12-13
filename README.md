@@ -1,32 +1,35 @@
-# Marshall: Python Script Management Application
+# Marshall: Python Script Management Application 
+A desktop application for visually managing and running multiple Python scripts simultaneously.
 
 <img width="50" height="50" alt="Icon" src="https://github.com/user-attachments/assets/efe29f1c-7319-49d0-8afd-36bd89cf239e" />
 
-[**Marshall**](https://github.com/LPLP-ghacc/Marshall/releases) is a desktop application built on WPF (.NET 8) designed for managing and executing Python scripts in a modular, visual interface. Each script runs in an independent block, supporting features such as automatic restarts at configurable intervals, state persistence across sessions, and real-time output monitoring. The application serves as a tool for automating tasks and integrating Python scripts into a controlled environment.
-
-<img width="1363" height="769" alt="изображение" src="https://github.com/user-attachments/assets/39edc00f-dc85-4aa5-9c48-d38fe9a10024" />
-
-
-
 ## Key Features
 
-- **Modular Blocks**: Create, rearrange, and remove blocks for individual Python scripts via drag-and-drop.
-- **Looping Execution**: Enable automatic script restarts with user-defined intervals in seconds.
-- **Automatic Module Installation**: Detects and installs missing Python modules using `pip` during runtime.
-- **Interactive Input**: Supports real-time text input for scripts requiring user interaction.
-- **Process Management**: Utilizes Job Objects for reliable process termination and cleanup.
-- **State Persistence**: Automatically saves and restores script paths, loop settings, and block layouts.
-- **System Tray Integration**: Provides a tray icon with a menu listing active scripts (upcoming enhancement).
-- **Customizable Settings**: Includes resource limits (CPU/RAM), auto-start with Windows, font customization, window opacity, and more.
-- **Additional Tools**: Automatic Python installation prompt, output copying, and error notifications.
+- Visual Canvas: Drag, drop, resize, and rearrange script blocks on a grid-snapped canvas.
+- Script Blocks: Each block runs a Python script independently, with live output display.
+- Loop Mode: Schedule scripts to rerun automatically at custom intervals.
+- Interactive Input: Send input to running scripts via built-in console.
+- Auto Module Install: Detects missing Python modules and installs them via pip.
+- Project Management: Create, save, and load projects with multiple blocks and configurations.
+- Resource Monitoring: Tracks CPU and RAM usage; enforces limits per script.
+- Tray Icon: Minimizes to system tray with quick access to running scripts and logs.
+- Embedded Tools: Script browser, code editor, recent projects, and embedded CMD.
+- Customizable: Adjustable fonts, block sizes, wallpapers, and settings.
 
+<img width="973" height="580" alt="image" src="https://github.com/user-attachments/assets/678d7380-b7cf-455c-b17c-eed3ccd13e1b" />
+<img width="976" height="580" alt="image" src="https://github.com/user-attachments/assets/fe666300-ebeb-4fde-bc01-3cd4a3183bf0" />
 
-## System Requirements
+## Requirements
 
-- **Operating System**: Windows 10/11 (64-bit)
-- **Framework**: .NET 8.0 Runtime
-- **Python**: 3.8+ (must be in PATH)
-- **Permissions**: Administrative rights for `pip` package installations (for auto-module fixes)
+Windows OS
+Python installed (detects and prompts installation if missing)
+.NET Desktop Runtime (for WPF)
 
-  
+## Usage
 
+- Create a new project or open an existing one.
+- Right-click canvas → Add Block.
+- Select a Python script for the block.
+- Run, loop, or interact with scripts directly in blocks.
+- Drag blocks to reorganize; resize via edges.
+- Use sidebar for code editing, script browsing, and settings.
