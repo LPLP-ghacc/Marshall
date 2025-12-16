@@ -16,6 +16,7 @@ using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
+using ColorConverter = System.Windows.Media.ColorConverter;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using MenuItem = System.Windows.Controls.MenuItem;
@@ -82,7 +83,7 @@ public partial class MainWindow : INotifyPropertyChanged
                 SettingsManager.Save(Settings);
                 ShowNotificationButton();
             };
-            
+
             SettingsManager.GenerateUI(UserSettingsField, Settings);
             
             await ConfigManager.LoadAllConfigs();
