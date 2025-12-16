@@ -27,7 +27,8 @@ namespace MarshallApp;
 
 public partial class MainWindow : INotifyPropertyChanged
 {
-    private AppResourceMonitor _appResourceMonitor;
+    public Point mousePosition;
+    private readonly AppResourceMonitor _appResourceMonitor;
     public UserSettings? Settings;
     public readonly string DefaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
     private NotifyIcon? _trayIcon;
@@ -79,6 +80,7 @@ public partial class MainWindow : INotifyPropertyChanged
             Settings.PropertyChanged += (_, _) =>
             {
                 SettingsManager.Save(Settings);
+                ShowNotificationButton();
             };
             
             SettingsManager.GenerateUI(UserSettingsField, Settings);
@@ -269,6 +271,17 @@ public partial class MainWindow : INotifyPropertyChanged
         var block = new BlockElement(RemoveBlockElement, LimitSettings);
         AddBlockElement(block);
     }
+    
+    private void AddBlockElement(BlockElement element)
+    {
+        Canvas.SetLeft(element, GridUtils.Snap(mousePosition.X));
+        Canvas.SetTop(element, GridUtils.Snap(mousePosition.Y));
+
+        MainCanvas.Children.Add(element);
+
+        Blocks.Add(element);
+    }
+    
     #endregion
 
     #region LeftPanel
@@ -414,19 +427,6 @@ public partial class MainWindow : INotifyPropertyChanged
     }
 
     private void Minimize_OnClick_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    
-    private void AddBlockElement(BlockElement element)
-    {
-        element.Width = 500;
-        element.Height = 500;
-
-        Canvas.SetLeft(element, GridUtils.Snap(20));
-        Canvas.SetTop(element, GridUtils.Snap(20));
-
-        MainCanvas.Children.Add(element);
-
-        Blocks.Add(element);
-    }
 
     private void NewProjectButton_OnClick(object sender, RoutedEventArgs e)
     {
@@ -562,6 +562,55 @@ public partial class MainWindow : INotifyPropertyChanged
         Process.Start(new ProcessStartInfo
         {
             FileName = "https://www.python.org/downloads/",
+            UseShellExecute = true
+        });
+    }
+
+    private void MainCanvas_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        mousePosition = e.GetPosition((Canvas)sender);
+    }
+
+    private void ShowNotificationButton()
+    {
+        NotificationButton.Visibility = Visibility.Visible;
+    }
+
+    private void NotificationButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var wind = new NotificationWindow("Applying the changes", "To apply the changed settings, the application needs to be restarted.",
+            () =>
+            {
+                Application.Current.MainWindow!.Close();
+
+                var window = new MainWindow();
+                Application.Current.MainWindow = window;
+                window.Show();
+                
+                NotificationButton.Visibility = Visibility.Hidden;
+            },
+            () =>
+            {
+                NotificationButton.Visibility = Visibility.Hidden;
+            });
+        
+        wind.ShowDialog();
+    }
+
+    private void OpenGitHub(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://github.com/LPLP-ghacc/Marshall#",
+            UseShellExecute = true
+        });
+    }
+
+    private void OpenUpdatesPages____OnClick(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://github.com/LPLP-ghacc/Marshall/releases",
             UseShellExecute = true
         });
     }

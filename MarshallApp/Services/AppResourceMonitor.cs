@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Management;
-using System.Windows.Controls;
 
 namespace MarshallApp.Services;
 
@@ -8,7 +7,6 @@ public class AppResourceMonitor
 {
     private readonly Process _process = Process.GetCurrentProcess();
     private const string ProcessName = "python";
-
 
     public (long totalMemoryMB, double cpuPercent) GetTotalUsage()
     {
@@ -22,7 +20,7 @@ public class AppResourceMonitor
         return (totalMem, cpu);
     }
 
-    private List<Process> GetChildProcesses(int parentId)
+    private static List<Process> GetChildProcesses(int parentId)
     {
         var children = new List<Process>();
         using var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_Process WHERE ParentProcessId={parentId}");

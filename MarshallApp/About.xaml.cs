@@ -10,13 +10,4 @@ public partial class About
     {
         InitializeComponent();
     }
-    
-    private void OpenGitHub(object sender, RoutedEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://github.com/LPLP-ghacc/Marshall#",
-            UseShellExecute = true
-        });
-    }
 }

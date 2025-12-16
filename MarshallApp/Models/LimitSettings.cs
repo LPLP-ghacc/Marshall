@@ -1,13 +1,7 @@
 ﻿namespace MarshallApp.Models;
 
-public class LimitSettings
+public class LimitSettings(int cpuLimitPercent, int memoryLimitMb)
 {
-    public int MemoryLimitMb { get; } = 0;  
-    public int CpuLimitPercent { get; } = 0;
-    
-    public LimitSettings(int cpuLimitPercent, int memoryLimitMb)
-    {
-        CpuLimitPercent = cpuLimitPercent;
-        MemoryLimitMb = memoryLimitMb;
-    }
+    public int MemoryLimitMb { get; } = memoryLimitMb;
+    public int CpuLimitPercent { get; } = cpuLimitPercent;
 }
