@@ -45,35 +45,29 @@ public class AppResourceMonitor
     private double GetTotalCpuUsage(List<Process> processes)
     {
         double total = 0;
-        var cpuCounter = new PerformanceCounter("Process", "% Processor Time", _process.ProcessName, true);
-        total += cpuCounter.NextValue();
 
-        foreach (var p in processes)
+        try
+        {
+            var mainCounter = new PerformanceCounter("Process", "% Processor Time", _process.ProcessName, true);
+            mainCounter.NextValue();
+            Thread.Sleep(100);
+            total += mainCounter.NextValue();
+        }
+        catch { /* ignored */ }
+
+        foreach (var p in processes.Where(p => !p.HasExited))
         {
             try
             {
-                var childCounter = new PerformanceCounter("Process", "% Processor Time", p.ProcessName + "#" + p.Id);
-                total += childCounter.NextValue();
+                var counter = new PerformanceCounter("Process", "% Processor Time", $"{p.ProcessName}#{p.Id}", true);
+                counter.NextValue();
+                Thread.Sleep(100);
+                total += counter.NextValue();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            catch (InvalidOperationException) { }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
-        Thread.Sleep(100);
-        total = cpuCounter.NextValue();
-        foreach (var p in processes)
-        {
-            try
-            {
-                var childCounter = new PerformanceCounter("Process", "% Processor Time", p.ProcessName + "#" + p.Id);
-                total += childCounter.NextValue();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+
         return total / Environment.ProcessorCount;
     }
 }
