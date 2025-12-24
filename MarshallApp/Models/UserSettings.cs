@@ -4,13 +4,23 @@ using System.Runtime.CompilerServices;
 namespace MarshallApp.Models;
 
 [AttributeUsage(AttributeTargets.Property)]
+public class HeaderAttribute(string value) : Attribute
+{
+    public string Title { get; } = value;
+}
+
+[AttributeUsage(AttributeTargets.Property)]
 public class DisplayNameAttribute(string name) : Attribute
 {
     public string Name { get; } = name;
 }
 
+[AttributeUsage(AttributeTargets.Property)]
+public class SeparatorAttribute() : Attribute {}
+
 public class UserSettings : INotifyPropertyChanged
 {
+    [Header("App Settings")]
     [DisplayName("Run at Windows startup")]
     public bool RunAtWindowsStartup
     {
@@ -53,8 +63,17 @@ public class UserSettings : INotifyPropertyChanged
         init => Set(ref field, value);
     }
 
+    [Header("Block Settings")]
+    [Separator]
     [DisplayName("Basic block size\ndefault 100")]
     public double BaseBlockSize
+    {
+        get;
+        init => Set(ref field, value);
+    }
+    
+    [DisplayName("Visualize background code")]
+    public bool EnableVisualizeBackgroundCode
     {
         get;
         init => Set(ref field, value);
@@ -94,7 +113,8 @@ public class UserSettings : INotifyPropertyChanged
             BaseBlockSize = 100,
             FontFamily = "Consolas",
             MemoryLimitMb = 300,
-            CpuLimitPercent = 10
+            CpuLimitPercent = 10,
+            EnableVisualizeBackgroundCode = true
         };
 
     public event PropertyChangedEventHandler? PropertyChanged;

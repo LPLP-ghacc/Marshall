@@ -12,6 +12,24 @@ namespace MarshallApp
         public static readonly string DefaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
         protected override void OnStartup(StartupEventArgs e)
         {
+            FrameworkCompatibilityPreferences.KeepTextBoxDisplaySynchronizedWithTextProperty = false;
+            
+            RenderCapability.TierChanged += (s, args) =>
+            {
+                if (RenderCapability.Tier < 2)
+                    RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+            };
+            
+            DispatcherUnhandledException += (s, ex) =>
+            {
+                ex.Handled = true;
+            };
+
+            AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
+            {
+                
+            };
+            
             RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
     
             base.OnStartup(e);

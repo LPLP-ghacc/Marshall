@@ -52,6 +52,7 @@ public partial class BlockElement
         
         var fontFamily = MainWindow.Instance.Settings.FontFamily ?? "Consolas";
         OutputText.FontFamily = new FontFamily(fontFamily);
+        CodeViewer.FontFamily = new FontFamily(fontFamily);
         
         _removeCallback = removeCallback;
         _jobManager = new JobManager(limitSettings);
@@ -422,7 +423,8 @@ public partial class BlockElement
                 }
             };
 
-            CodeViewer.Text = await File.ReadAllTextAsync(FilePath);
+            if(MainWindow.Instance.Settings!.EnableVisualizeBackgroundCode)
+                CodeViewer.Text = await File.ReadAllTextAsync(FilePath);
 
             _activeProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _activeProcess.Start();

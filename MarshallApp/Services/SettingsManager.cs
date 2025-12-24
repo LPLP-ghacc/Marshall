@@ -59,7 +59,7 @@ public static class SettingsManager
             var displayName = prop.GetCustomAttributes(typeof(DisplayNameAttribute), false)
                 .Cast<DisplayNameAttribute>()
                 .FirstOrDefault()?.Name ?? prop.Name + ":";
-    
+            
             var grid = new Grid { Margin = new Thickness(10, 8, 10, 8) };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "Labels" });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -138,6 +138,28 @@ public static class SettingsManager
     
             if (control == null) continue;
     
+            var separator = prop.GetCustomAttributes(typeof(SeparatorAttribute), true);
+            if (separator.Length > 0 && separator[0] is SeparatorAttribute separatorAttr)
+            {
+                var sep = new Separator();
+                stack.Children.Add(sep);
+            }
+            
+            var header = prop.GetCustomAttributes(typeof(HeaderAttribute), true);
+            if (header.Length > 0 && header[0] is HeaderAttribute headerAttribute)
+            {
+                var headerTextBlock = new TextBlock()
+                {
+                    Foreground = (Brush)Application.Current.Resources["PrimaryTextBrush"]!,
+                    Margin = new Thickness(5),
+                    FontSize = 13,
+                    FontWeight =  FontWeights.Bold,
+                    Text = headerAttribute.Title
+                };
+                
+                stack.Children.Add(headerTextBlock);
+            }
+            
             Grid.SetColumn(control, 1);
             grid.Children.Add(control);
             stack.Children.Add(grid);
