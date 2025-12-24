@@ -4,7 +4,7 @@
              xmlns:models="clr-namespace:MarshallApp.Models"
              xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
              xmlns:forms="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             Background="{StaticResource PanelsBrush2}">
+             Background="#8D000000">
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -32,7 +32,7 @@
             <Grid Row="1">
                 <TreeView x:Name="ProjectTree"
                           Margin="5"
-                          Background="{StaticResource PanelsBrush}"
+                          Background="#85000000"
                           Foreground="{StaticResource PrimaryTextBrush}"
                           SelectedItemChanged="ProjectTree_OnSelectedItemChanged"
                           Style="{StaticResource ModernTreeViewStyle}"

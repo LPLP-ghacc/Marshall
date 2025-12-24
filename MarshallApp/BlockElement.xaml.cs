@@ -11,6 +11,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using MarshallApp.Models;
 using MarshallApp.Services;
+using MarshallApp.Utils;
 
 // ReSharper disable InconsistentNaming
 

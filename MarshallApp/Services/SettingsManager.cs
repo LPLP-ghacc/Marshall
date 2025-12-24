@@ -45,133 +45,110 @@ public static class SettingsManager
     public static void GenerateUI(ScrollViewer scrollViewer, UserSettings settings)
     {
         var props = typeof(UserSettings).GetProperties();
-
         var stack = new StackPanel();
         Grid.SetIsSharedSizeScope(stack, true);
         scrollViewer.Content = stack;
-
+    
         var textBoxStyle = (Style)Application.Current.Resources["FlatTextBoxStyle"]!;
         var textBlockStyle = (Style)Application.Current.Resources["FlatTextBlockStyle"]!;
         var comboBoxStyle = (Style)Application.Current.Resources["FlatComboBoxStyle"]!;
         var checkBoxStyle = (Style)Application.Current.Resources["FlatCheckBoxStyle"]!;
-
+    
         foreach (var prop in props)
         {
-            var grid = new Grid
-            {
-                Margin = new Thickness(10, 8, 10, 8)
-            };
-
-            grid.ColumnDefinitions.Add(new ColumnDefinition
-            {
-                Width = GridLength.Auto,
-                SharedSizeGroup = "Labels"
-            });
-
-            grid.ColumnDefinitions.Add(new ColumnDefinition
-            {
-                Width = new GridLength(1, GridUnitType.Star)
-            });
-
+            var displayName = prop.GetCustomAttributes(typeof(DisplayNameAttribute), false)
+                .Cast<DisplayNameAttribute>()
+                .FirstOrDefault()?.Name ?? prop.Name + ":";
+    
+            var grid = new Grid { Margin = new Thickness(10, 8, 10, 8) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "Labels" });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+    
             var label = new TextBlock
             {
-                Text = prop.Name + ":",
+                Text = displayName,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0),
                 Style = textBlockStyle
             };
-
             Grid.SetColumn(label, 0);
             grid.Children.Add(label);
-
-            FrameworkElement control;
-
-            if (prop.PropertyType == typeof(bool))
+    
+            FrameworkElement? control = prop.PropertyType switch
             {
-                control = new CheckBox
+                { } t when t == typeof(bool) => new CheckBox
                 {
                     VerticalAlignment = VerticalAlignment.Center,
-                    Style = checkBoxStyle,
-                };
-
-                control.SetBinding(
-                    ToggleButton.IsCheckedProperty,
-                    new Binding(prop.Name)
-                    {
-                        Source = settings,
-                        Mode = BindingMode.TwoWay
-                    });
-            }
-            else if (prop.PropertyType == typeof(double))
-            {
-                control = new TextBox
+                    Style = checkBoxStyle
+                }.WithBinding(ToggleButton.IsCheckedProperty, new Binding(prop.Name) { Source = settings, Mode = BindingMode.TwoWay }),
+    
+                { } t when t == typeof(double) => new TextBox
                 {
                     Style = textBoxStyle,
                     Height = 30,
                     Margin = new Thickness(5),
                     VerticalContentAlignment = VerticalAlignment.Center
-                };
-
-                control.SetBinding(
-                    TextBox.TextProperty,
-                    new Binding(prop.Name)
-                    {
-                        Source = settings,
-                        Mode = BindingMode.TwoWay,
-                        UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
-                    });
-            }
-            else if (prop.PropertyType == typeof(string) && prop.Name == "FontFamily")
-            {
-                var fonts = Fonts.SystemFontFamilies
-                    .OrderBy(f => f.Source)
-                    .ToList();
-
-                control = new ComboBox
+                }.WithBinding(TextBox.TextProperty, new Binding(prop.Name)
                 {
-                    ItemsSource = fonts,
+                    Source = settings,
+                    Mode = BindingMode.TwoWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
+                }),
+    
+                { } t when t == typeof(int) => new TextBox
+                {
+                    Style = textBoxStyle,
+                    Height = 30,
+                    Margin = new Thickness(5),
+                    VerticalContentAlignment = VerticalAlignment.Center
+                }.WithBinding(TextBox.TextProperty, new Binding(prop.Name)
+                {
+                    Source = settings,
+                    Mode = BindingMode.TwoWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
+                }),
+                
+                { } t when t == typeof(string) && prop.Name == "FontFamily" => new ComboBox
+                {
+                    ItemsSource = Fonts.SystemFontFamilies.OrderBy(f => f.Source).ToList(),
                     Margin = new Thickness(5),
                     Style = comboBoxStyle
-                };
-
-                control.SetBinding(
-                    Selector.SelectedItemProperty,
-                    new Binding(prop.Name)
-                    {
-                        Source = settings,
-                        Mode = BindingMode.TwoWay,
-                        Converter = new FontFamilyConverter()
-                    });
-            }
-            else if (prop.PropertyType == typeof(string))
-            {
-                control = new TextBox
+                }.WithBinding(Selector.SelectedItemProperty, new Binding(prop.Name)
+                {
+                    Source = settings,
+                    Mode = BindingMode.TwoWay,
+                    Converter = new FontFamilyConverter()
+                }),
+    
+                { } t when t == typeof(string) => new TextBox
                 {
                     Style = textBoxStyle,
                     Height = 30,
                     Margin = new Thickness(5),
                     VerticalContentAlignment = VerticalAlignment.Center
-                };
-
-                control.SetBinding(
-                    TextBox.TextProperty,
-                    new Binding(prop.Name)
-                    {
-                        Source = settings,
-                        Mode = BindingMode.TwoWay,
-                        UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
-                    });
-            }
-            else
-            {
-                continue;
-            }
-
+                }.WithBinding(TextBox.TextProperty, new Binding(prop.Name)
+                {
+                    Source = settings,
+                    Mode = BindingMode.TwoWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
+                }),
+    
+                _ => null
+            };
+    
+            if (control == null) continue;
+    
             Grid.SetColumn(control, 1);
             grid.Children.Add(control);
-
             stack.Children.Add(grid);
         }
     }
-
+    
+    // Extension method for cleaner binding syntax
+    private static T WithBinding<T>(this T element, DependencyProperty property, Binding binding) where T : FrameworkElement
+    {
+        element.SetBinding(property, binding);
+        return element;
+    }
+    
 }

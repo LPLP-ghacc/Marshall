@@ -3,7 +3,6 @@ using MarshallApp.Services;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -11,38 +10,37 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MarshallApp.Controllers;
+using MarshallApp.Utils;
+using Microsoft.Win32;
 using Application = System.Windows.Application;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using MenuItem = System.Windows.Controls.MenuItem;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using Path = System.IO.Path;
 using Point = System.Windows.Point;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace MarshallApp;
 
 public partial class MainWindow : INotifyPropertyChanged
 {
-    public Point mousePosition;
-    private readonly AppResourceMonitor _appResourceMonitor;
+    public static MainWindow Instance { get; private set; } = null!;
     public UserSettings? Settings;
-    public readonly string DefaultMarshallProjectsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Marshall Projects");
+    public Project? CurrentProject { get; set; }
+    public LimitSettings LimitSettings { get; private set; } = new(10, 300);
     private NotifyIcon? _trayIcon;
+    private Point _mousePosition;
+    
     public readonly List<BlockElement> Blocks = [];
-    private WallpaperController? _wallControl;
+    public WallpaperController? WallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
     private readonly DispatcherTimer _loggerTimer = new();
-    private readonly DispatcherTimer _appResourceMonitorTimer = new();
-    public LimitSettings LimitSettings { get; } = new(10, 300);
-    public Project? CurrentProject { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
-    public static MainWindow Instance { get; private set; } = null!;
-
     private readonly List<UIElement> _mainFieldElements = [];
 
     public MainWindow()
@@ -50,8 +48,6 @@ public partial class MainWindow : INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
         Instance = this;
-        
-        if(!Directory.Exists(DefaultMarshallProjectsPath)) Directory.CreateDirectory(DefaultMarshallProjectsPath);
         
         _mainFieldElements.Add(ScriptBrowser);
         _mainFieldElements.Add(MainCanvas);
@@ -71,20 +67,23 @@ public partial class MainWindow : INotifyPropertyChanged
                 this.DragMove();
         };
         
-        if (ConfigManager.AppConfig != null) LimitSettings = 
-            new LimitSettings(ConfigManager.AppConfig.CpuLimitPercent, ConfigManager.AppConfig.MemoryLimitMb) ;
-        
         Loaded += async (_, _) =>
         {
             Settings = await SettingsManager.Load();
             
-            Settings.PropertyChanged += (_, _) =>
+            if (ConfigManager.AppConfig != null) LimitSettings = 
+                new LimitSettings(Settings.CpuLimitPercent, Settings.MemoryLimitMb) ;
+            
+            Settings.PropertyChanged += (_, e) =>
             {
                 SettingsManager.Save(Settings);
                 ShowNotificationButton();
+                
+                if (e.PropertyName == nameof(UserSettings.RunAtWindowsStartup))
+                    ApplyStartupSetting();
             };
 
-            SettingsManager.GenerateUI(UserSettingsField, Settings);
+            SettingsManager.GenerateUI(SettingsPanel.Instance.UserSettingsField, Settings);
             
             await ConfigManager.LoadAllConfigs();
 
@@ -109,9 +108,6 @@ public partial class MainWindow : INotifyPropertyChanged
         InitializeTray();
         InitLoggerTimer();
 
-        _appResourceMonitor = new AppResourceMonitor();
-        InitMonitorTimer();
-
         // Welcome to the home of the mentally ill
         "Hello World!".Log();
     }
@@ -122,7 +118,16 @@ public partial class MainWindow : INotifyPropertyChanged
         
         foreach (var element in _mainFieldElements)
         {
-            element.Visibility = element != obj ? Visibility.Collapsed : Visibility.Visible;
+            if (element == obj)
+            {
+                element.Visibility = Visibility.Visible;
+                if (element is UserControl uc) uc.IsEnabled = true;
+            }
+            else
+            {
+                element.Visibility = Visibility.Collapsed;
+                if (element is UserControl uc) uc.IsEnabled = false;
+            }
         }
 
         var buttons = new List<Button>()
@@ -147,7 +152,7 @@ public partial class MainWindow : INotifyPropertyChanged
         _trayIcon.Icon = new Icon(Path.Combine(Environment.CurrentDirectory, "Resource/Icons/IconSmall.ico"));
         _trayIcon.Visible = true;
 
-        _trayIcon.Text = "Marshall";
+        _trayIcon.Text = App.APPNAME;
         _trayIcon.ContextMenuStrip = new ContextMenuStrip();
 
         _trayIcon.MouseUp += TrayIcon_MouseUp;
@@ -155,53 +160,66 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void TrayIcon_MouseUp(object? sender, MouseEventArgs e)
     {
-        if (e.Button != MouseButtons.Left && e.Button != MouseButtons.Right) return;
-
-        var menu = _trayIcon?.ContextMenuStrip;
-        Debug.Assert(menu != null, nameof(menu) + " != null");
-        
-        menu.Items.Clear();
-
-        menu.Items.Add("Running scripts:").Enabled = false;
-        menu.Items.Add(new ToolStripSeparator());
-
-        if (Blocks.Count == 0)
+        if (e.Button == MouseButtons.Left)
         {
-            menu.Items.Add("(no scripts)").Enabled = false;
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            MaxWidth = SystemParameters.WorkArea.Width;
+            MaxHeight = SystemParameters.WorkArea.Height;
+            WindowState = WindowState.Normal;
+
+            FullscreenEnter.Visibility = Visibility.Collapsed;
+            FullscreenExit.Visibility = Visibility.Visible;
+            Show();
         }
         else
         {
-            foreach (var block in Blocks)
+            var menu = _trayIcon?.ContextMenuStrip;
+            Debug.Assert(menu != null, nameof(menu) + " != null");
+        
+            menu.Items.Clear();
+
+            menu.Items.Add("Running scripts:").Enabled = false;
+            menu.Items.Add(new ToolStripSeparator());
+
+            if (Blocks.Count == 0)
             {
-                var name = string.IsNullOrEmpty(block.FilePath)
-                    ? "(unnamed)"
-                    : Path.GetFileName(block.FilePath);
-
-                var item = new ToolStripMenuItem(name);
-
-                item.Click += (_, _) => ShowLogViewer(block);
-
-                if (block.IsLooping)
-                    item.ForeColor = Color.Green;
-                else if (block.IsRunning)
-                    item.ForeColor = Color.Blue;
-
-                menu.Items.Add(item);
+                menu.Items.Add("(no scripts)").Enabled = false;
             }
+            else
+            {
+                foreach (var block in Blocks)
+                {
+                    var name = string.IsNullOrEmpty(block.FilePath)
+                        ? "(unnamed)"
+                        : Path.GetFileName(block.FilePath);
+
+                    var item = new ToolStripMenuItem(name);
+
+                    item.Click += (_, _) => ShowLogViewer(block);
+
+                    if (block.IsLooping)
+                        item.ForeColor = Color.Green;
+                    else if (block.IsRunning)
+                        item.ForeColor = Color.Blue;
+
+                    menu.Items.Add(item);
+                }
+            }
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var exit = new ToolStripMenuItem("Exit");
+            exit.Click += (_, _) => 
+            {
+                ConfigManager.SaveAppConfig();
+                Environment.Exit(0);
+            };
+
+            menu.Items.Add(exit);
+
+            menu.Show(System.Windows.Forms.Cursor.Position);
         }
-
-        menu.Items.Add(new ToolStripSeparator());
-
-        var exit = new ToolStripMenuItem("Exit");
-        exit.Click += (_, _) => 
-        {
-            ConfigManager.SaveAppConfig();
-            Environment.Exit(0);
-        };
-
-        menu.Items.Add(exit);
-
-        menu.Show(System.Windows.Forms.Cursor.Position);
     }
     
     public void ShowLogViewer(BlockElement block)
@@ -275,8 +293,8 @@ public partial class MainWindow : INotifyPropertyChanged
     
     private void AddBlockElement(BlockElement element)
     {
-        Canvas.SetLeft(element, GridUtils.Snap(mousePosition.X));
-        Canvas.SetTop(element, GridUtils.Snap(mousePosition.Y));
+        Canvas.SetLeft(element, GridUtils.Snap(_mousePosition.X));
+        Canvas.SetTop(element, GridUtils.Snap(_mousePosition.Y));
 
         MainCanvas.Children.Add(element);
 
@@ -338,8 +356,15 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        ConfigManager.SaveAppConfig();
-        Environment.Exit(0);
+        if (!Settings!.MinimizeToTrayOnClose)
+        {
+            ConfigManager.SaveAppConfig();
+            Environment.Exit(0);
+        }else
+        {
+            WindowState = WindowState.Minimized;
+            Hide();
+        }
     }
     
     #endregion
@@ -416,13 +441,13 @@ public partial class MainWindow : INotifyPropertyChanged
     private void WallpaperControlInit()
     {
         var imagesSource = Path.Combine(Environment.CurrentDirectory + "/Resource/Background");
-        _wallControl = new WallpaperController(RootImageBrush, imagesSource);
-        _wallControl.Update();
+        WallControl = new WallpaperController(RootImageBrush, imagesSource);
+        WallControl.Update();
         
         _wallpaperTimer.Interval = TimeSpan.FromSeconds(30);
         _wallpaperTimer.Tick += (_, _) =>
         {
-            _wallControl.Update();
+            WallControl.Update();
         };
         _wallpaperTimer.Start();
     }
@@ -484,23 +509,6 @@ public partial class MainWindow : INotifyPropertyChanged
             _loggerTimer.Stop();
         };
     }
-    
-    private void InitMonitorTimer()
-    {
-        _appResourceMonitorTimer.Interval = TimeSpan.FromSeconds(1);
-        _appResourceMonitorTimer.Tick += async (_, _) =>
-        {
-            var usage = await Task.Run(() => _appResourceMonitor.GetTotalUsage());
-
-            Dispatcher.Invoke(() =>
-            {
-                ResourceMonitorOutput.Text = 
-                    $"CPU: {usage.cpuPercent:F1}%\nRAM: {usage.totalMemoryMB} MB";
-            });
-        };
-        _appResourceMonitorTimer.Start();
-    }
-
 
     private void ProjectContextMenu_OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -558,24 +566,9 @@ public partial class MainWindow : INotifyPropertyChanged
         
     }
 
-    private void OpenPythonInstallationPage_OnClick(object sender, RoutedEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://www.python.org/downloads/",
-            UseShellExecute = true
-        });
-    }
+    private void MainCanvas_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e) => _mousePosition = e.GetPosition((Canvas)sender);
 
-    private void MainCanvas_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        mousePosition = e.GetPosition((Canvas)sender);
-    }
-
-    private void ShowNotificationButton()
-    {
-        NotificationButton.Visibility = Visibility.Visible;
-    }
+    private void ShowNotificationButton() => NotificationButton.Visibility = Visibility.Visible;
 
     private void NotificationButton_OnClick(object sender, RoutedEventArgs e)
     {
@@ -598,29 +591,12 @@ public partial class MainWindow : INotifyPropertyChanged
         wind.ShowDialog();
     }
 
-    private void OpenGitHub(object sender, RoutedEventArgs e)
+    private void ApplyStartupSetting()
     {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://github.com/LPLP-ghacc/Marshall#",
-            UseShellExecute = true
-        });
-    }
-
-    private void OpenUpdatesPages____OnClick(object sender, RoutedEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://github.com/LPLP-ghacc/Marshall/releases",
-            UseShellExecute = true
-        });
-    }
-}
-
-public static class GridUtils
-{
-    public static double Snap(double value)
-    {
-        return Math.Round(value / BlockElement.GridSize) * BlockElement.GridSize;
+        var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+        if (Settings!.RunAtWindowsStartup)
+            key?.SetValue(App.APPNAME, $"\"{System.Reflection.Assembly.GetExecutingAssembly().Location}\"");
+        else
+            key?.DeleteValue(App.APPNAME, false);
     }
 }

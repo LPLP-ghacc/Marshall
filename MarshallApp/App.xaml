@@ -408,7 +408,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TreeView">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                        <Border Background="#85000000" CornerRadius="6">
                             <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
                                 <ItemsPresenter/>
                             </ScrollViewer>
@@ -462,7 +462,6 @@
                                     Padding="{TemplateBinding Padding}"
                                     Margin="{TemplateBinding Margin}">
                                 <Grid>
-                                    <!-- Только один IsChecked! -->
                                     <ToggleButton x:Name="Expander"
                                                   Width="16" Height="16"
                                                   Margin="2,0,6,0"
@@ -478,7 +477,6 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Дочерние элементы -->
                             <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Margin="19,0,0,0"/>
                         </Grid>
 

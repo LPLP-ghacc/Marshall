@@ -1,0 +1,60 @@
+﻿<UserControl x:Class="MarshallApp.SettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:MarshallApp"
+             mc:Ignorable="d">
+        <Grid x:Name="UserSettingsGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#26000000">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer x:Name="UserSettingsField" Background="Transparent" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="5"/>
+            <Grid Grid.Column="1" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Vertical" Grid.Row="0" Margin="5">
+                    <TextBlock Text="App Resource Monitor:" Style="{StaticResource FlatTextBlockStyle}" FontSize="16"/>
+                    <Grid Margin="10,5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+        
+                        <TextBlock Text="CPU:" VerticalAlignment="Center"/>
+                        <ProgressBar Grid.Row="0" Grid.Column="1" x:Name="CpuProgressBar" Height="20" Margin="10,0" 
+                                     Maximum="100" Value="0" Foreground="#FF60CDFF"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Text="{Binding ElementName=CpuProgressBar, Path=Value, StringFormat={}{0:F1}%}"/>
+        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="RAM:" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                        <ProgressBar Grid.Row="1" Grid.Column="1" x:Name="RamProgressBar" Height="20" Margin="10,0" 
+                                     Maximum="16384" Value="0" Foreground="#FFFFA060"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Text="{Binding ElementName=RamProgressBar, Path=Value, StringFormat={}{0} MB}"/>
+                    </Grid>
+    
+                    <TextBlock x:Name="ResourceMonitorOutput" Style="{StaticResource FlatTextBlockStyle}" 
+                               Text="collecting data..." Margin="10"/>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Grid.Row="1">
+                    <Button x:Name="OpenPythonInstallationPage" Style="{StaticResource FlatButtonStyle}" Height="30" Margin="5" Content="Open Python installation page..." Click="OpenPythonInstallationPage_OnClick"/>
+                    <Button x:Name="OpenGitHubButton" Content="Project GitHub page..." Height="30" Margin="5" Style="{StaticResource FlatButtonStyle}" Click="OpenGitHub"/>
+                    <Button x:Name="OpenUpdatesPages" Content="Check for updates..." Height="30" Margin="5" Style="{StaticResource FlatButtonStyle}" Click="OpenUpdatesPages_OnClick"/>
+                    <Separator/>
+                    <Button x:Name="OpenBackgroundsFolder" Content="Open background images folder" Height="30" Margin="5" Style="{StaticResource FlatButtonStyle}" Click="OpenBackgroundsFolder_OnClick"/>
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Column="2" >
+                <local:About></local:About>
+            </Grid>
+        </Grid>
+</UserControl>

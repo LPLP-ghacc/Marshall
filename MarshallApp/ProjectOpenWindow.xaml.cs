@@ -32,7 +32,7 @@ public partial class ProjectOpenWindow
             Filter = "Marshall Project (*.mpr)|*.mpr",
             Title = "Open Marshall Project"
         };
-        dialog.InitialDirectory = MainWindow.Instance.DefaultMarshallProjectsPath;
+        dialog.InitialDirectory = App.DefaultMarshallProjectsPath;
 
         if (dialog.ShowDialog()  != System.Windows.Forms.DialogResult.OK) return;
         OpenProject(dialog.FileName);

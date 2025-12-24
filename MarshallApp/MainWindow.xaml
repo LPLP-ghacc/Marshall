@@ -9,6 +9,7 @@
         Height="800" Width="1200" 
         MinHeight="200" MinWidth="600"
         ResizeMode="CanResizeWithGrip" 
+        AllowsTransparency="False"
         WindowStyle="None"
         Foreground="{StaticResource PrimaryTextBrush}" 
         Title="Marshall">
@@ -59,7 +60,7 @@
         </Style>
     </Window.Resources>
     
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid" CacheMode="BitmapCache">
         <Grid.Background>  
             <ImageBrush x:Name="RootImageBrush" Stretch="UniformToFill" Opacity="0.3"/>     
         </Grid.Background>
@@ -70,9 +71,6 @@
 
         <Grid Grid.Row="0">
             <Border x:Name="Top" Grid.ColumnSpan="5" >
-            <Border.Effect>
-                <BlurEffect Radius="1" RenderingBias="Performance"/>
-            </Border.Effect>
             <Grid>
                 <StackPanel Orientation="Horizontal" Background="#4A000000">
                     <TextBlock Text=" ❍ Marshall" 
@@ -216,32 +214,7 @@
                     </Canvas.ContextMenu>
                 </Canvas>
                 <local:CodeEditorPanel x:Name="CodeEditor" Visibility="Collapsed"/>
-                <Grid x:Name="UserSettingsGrid" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource PanelsBrush}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <ScrollViewer x:Name="UserSettingsField" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" />
-                    <Grid Grid.Column="1" >
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Orientation="Vertical" Grid.Row="0">
-                            <TextBlock Text="App Resource Monitor: " Style="{StaticResource FlatTextBlockStyle}" FontSize="16"/>
-                            <TextBlock x:Name="ResourceMonitorOutput" Style="{StaticResource FlatTextBlockStyle}" Text="collecting data..." Margin="10"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Vertical" Grid.Row="1">
-                            <Button x:Name="OpenPythonInstallationPage" Style="{StaticResource FlatButtonStyle}" Height="30" Margin="5" Content="Open Python installation page..." Click="OpenPythonInstallationPage_OnClick"/>
-                            <Button x:Name="OpenGitHubButton" Content="Project GitHub page..." Height="30" Margin="5" Style="{StaticResource FlatButtonStyle}" Click="OpenGitHub"/>
-                            <Button x:Name="OpenUpdatesPages" Content="Check for updates..." Height="30" Margin="5" Style="{StaticResource FlatButtonStyle}" Click="OpenUpdatesPages____OnClick"/>
-                        </StackPanel>
-                    </Grid>
-                    <Grid Grid.Column="2" >
-                        <local:About></local:About>
-                    </Grid>
-                </Grid>
+                <local:SettingsPanel x:Name="UserSettingsGrid" Visibility="Collapsed"/>
             </Grid>
         </Grid>
     </Grid>

@@ -10,62 +10,64 @@ public class AppResourceMonitor
 
     public (long totalMemoryMB, double cpuPercent) GetTotalUsage()
     {
+        _process.Refresh();
         var totalMem = _process.PrivateMemorySize64 / 1024 / 1024;
 
         var childProcesses = GetChildProcesses(_process.Id);
-        totalMem += childProcesses.Sum(child => child.PrivateMemorySize64 / 1024 / 1024);
+        foreach (var child in childProcesses)
+        {
+            try
+            {
+                child.Refresh();
+                if (!child.HasExited)
+                    totalMem += child.PrivateMemorySize64 / 1024 / 1024;
+            }
+            catch { /* ignored */ }
+        }
 
-        var cpu = GetTotalCpuUsage(childProcesses);
-
+        var cpu = GetTotalCpuUsage(_process, childProcesses);
         return (totalMem, cpu);
     }
 
     private static List<Process> GetChildProcesses(int parentId)
     {
         var children = new List<Process>();
-        using var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_Process WHERE ParentProcessId={parentId}");
-        foreach (var o in searcher.Get())
+        try
         {
-            var obj = (ManagementObject)o;
-            if (!uint.TryParse(obj["ProcessId"].ToString(), out var pid)) continue;
-            try
+            using var searcher = new ManagementObjectSearcher($"SELECT ProcessId FROM Win32_Process WHERE ParentProcessId={parentId}");
+            foreach (var o in searcher.Get())
             {
-                var proc = Process.GetProcessById((int)pid);
-                if (proc.ProcessName.Equals(ProcessName, StringComparison.OrdinalIgnoreCase))
-                    children.Add(proc);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
+                var obj = (ManagementObject)o;
+                if (!uint.TryParse(obj["ProcessId"]?.ToString(), out var pid)) continue;
+                try
+                {
+                    var proc = Process.GetProcessById((int)pid);
+                    if (string.Equals(proc.ProcessName, ProcessName, StringComparison.OrdinalIgnoreCase))
+                        children.Add(proc);
+                }
+                catch { /* ignored */ }
             }
         }
+        catch { /* ignored */ }
         return children;
     }
 
-    private double GetTotalCpuUsage(List<Process> processes)
+    private static double GetTotalCpuUsage(Process main, List<Process> children)
     {
         double total = 0;
+        var all = new List<Process> { main };
+        all.AddRange(children.Where(p => !p.HasExited));
 
-        try
-        {
-            var mainCounter = new PerformanceCounter("Process", "% Processor Time", _process.ProcessName, true);
-            mainCounter.NextValue();
-            Thread.Sleep(100);
-            total += mainCounter.NextValue();
-        }
-        catch { /* ignored */ }
-
-        foreach (var p in processes.Where(p => !p.HasExited))
+        foreach (var p in all)
         {
             try
             {
-                var counter = new PerformanceCounter("Process", "% Processor Time", $"{p.ProcessName}#{p.Id}", true);
+                using var counter = new PerformanceCounter("Process", "% Processor Time", p.ProcessName + (p.Id != main.Id ? $"#{p.Id}" : ""), true);
                 counter.NextValue();
                 Thread.Sleep(100);
                 total += counter.NextValue();
             }
-            catch (InvalidOperationException) { }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch { /* ignored */ }
         }
 
         return total / Environment.ProcessorCount;

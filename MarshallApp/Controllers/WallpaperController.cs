@@ -6,14 +6,14 @@ namespace MarshallApp.Controllers;
 
 public class WallpaperController
 {
+    public readonly string WorkingDirectory;
     private readonly ImageBrush _brush;
-    private readonly string _workingDirectory;
     private readonly List<string> _imageSet;
     
     public WallpaperController(ImageBrush brush, string  workingDirectory)
     {
         _brush =  brush;
-        _workingDirectory = workingDirectory;
+        WorkingDirectory = workingDirectory;
         
         _imageSet = GetImages();
     }
@@ -23,13 +23,13 @@ public class WallpaperController
         if (_imageSet.Count <= 0) return;
         var rnd = new Random();
         var current = rnd.Next(0, _imageSet.Count);
-        _brush.ImageSource = new BitmapImage(new Uri(Path.Combine(_workingDirectory, _imageSet[current])));
+        _brush.ImageSource = new BitmapImage(new Uri(Path.Combine(WorkingDirectory, _imageSet[current])));
     }
 
     private List<string> GetImages()
     {
         var imageSet = new List<string>();
-        var files = Directory.GetFiles(_workingDirectory);
+        var files = Directory.GetFiles(WorkingDirectory);
 
         foreach (var file in files)
         {

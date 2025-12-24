@@ -4,13 +4,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
-        Foreground="{StaticResource PrimaryTextBrush}">
+        Foreground="{StaticResource PrimaryTextBrush}" Background="Transparent">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="2*"/>
             <RowDefinition Height="5*"/>
         </Grid.RowDefinitions>
-        <Image Grid.RowSpan="2" Source="./Resource/Icons/funnyIcon.png" Stretch="UniformToFill"> </Image>
         <Grid Grid.Row="0" x:Name="Title">
             <TextBlock Text="❍ Marshall" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
         </Grid>
@@ -21,11 +20,11 @@
             </Grid.RowDefinitions>
 
             <StackPanel>
-                <TextBlock Text="Marshall is a desktop application, which allows you to manage and run Python scripts in convenient visual blocks.
+                <TextBlock TextAlignment="Center" Text="Marshall is a desktop application, which allows you to manage and run Python scripts in convenient visual blocks.
 Each block can execute a separate script, restart automatically at a preset interval, and also save its state between program launches." 
                            FontSize="12" Margin="10,15,10,0" HorizontalAlignment="left" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                <TextBlock Text="The Marshall application is designed as a tool for automating and adding Python scripts to a virtual environment." 
-                           FontSize="12" Margin="10,5,10,0" HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                <TextBlock  TextAlignment="Center"  Text="The Marshall application is designed as a tool for automating and adding Python scripts to a virtual environment." 
+                            FontSize="12" Margin="10,5,10,0" HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap"/>
             </StackPanel>
         </Grid>
     </Grid>

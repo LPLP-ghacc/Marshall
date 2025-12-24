@@ -251,7 +251,7 @@ public partial class ScriptBrowserPanel
             Filter = "Marshall Project (*.mpr)|*.mpr",
             Title = "Open Marshall Project"
         };
-        dialog.InitialDirectory = MainWindow.Instance.DefaultMarshallProjectsPath;
+        dialog.InitialDirectory = App.DefaultMarshallProjectsPath;
         if (dialog.ShowDialog()  != DialogResult.OK) return;
         
         var mainWindow = MainWindow.Instance;
