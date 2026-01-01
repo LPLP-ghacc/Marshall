@@ -372,7 +372,7 @@ public partial class BlockElement
     
     private void CallLogViewer_Click(object sender, RoutedEventArgs e)
     {
-        MainWindow.Instance.ShowLogViewer(this);
+        MainWindow.ShowLogViewer(this);
     }
 
     private void SendExceptionMessage(Exception ex)

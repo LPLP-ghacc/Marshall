@@ -65,7 +65,7 @@ public partial class ProjectCreationWindow
 
             var projectFolder = Path.Combine(baseFolder, name);
 
-            ResultProject = ProjectManager.CreateNewProject(projectFolder, name);
+            ResultProject = await ProjectManager.CreateNewProject(projectFolder, name);
             var file = Path.Combine(projectFolder, name + ProjectManager.ProjectExtension);
             await ConfigManager.AddRecentProjectAsync(file);
         

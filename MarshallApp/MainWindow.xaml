@@ -70,7 +70,7 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
-            <Border x:Name="Top" Grid.ColumnSpan="5" >
+            <Border x:Name="TopBorder" Grid.ColumnSpan="5" >
             <Grid>
                 <StackPanel Orientation="Horizontal" Background="#4A000000">
                     <TextBlock Text=" ❍ Marshall" 

@@ -17,7 +17,7 @@
 
             <Border Background="{StaticResource PanelsBrush}" MouseLeftButtonDown="TopBar_MouseDown">
                 <Grid>
-                    <TextBlock x:Name="Title" Text="SAMPLE" Foreground="{StaticResource PrimaryTextBrush}" FontSize="16" FontWeight="Bold"
+                    <TextBlock x:Name="TitleTextBlock" Text="SAMPLE" Foreground="{StaticResource PrimaryTextBrush}" FontSize="16" FontWeight="Bold"
                                VerticalAlignment="Center" Margin="16,0"/>
                 </Grid>
             </Border>

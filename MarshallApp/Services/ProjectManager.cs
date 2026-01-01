@@ -24,14 +24,14 @@ public abstract class ProjectManager
                ?? throw new Exception("Invalid project file.");
     }
 
-    public static Project CreateNewProject(string folder, string name)
+    public static async Task<Project> CreateNewProject(string folder, string name)
     {
         Directory.CreateDirectory(folder);
         Directory.CreateDirectory(Path.Combine(folder, "Scripts"));
 
         var project = new Project(name, folder, []);
 
-        SaveProjectAsync(project);
+        await SaveProjectAsync(project);
         $"Created and saved {project.ProjectName}".Log();
         return project;
     }

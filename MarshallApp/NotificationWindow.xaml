@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:MarshallApp"
         mc:Ignorable="d"
         SizeToContent="WidthAndHeight"
         Title="NotificationWindow" Height="450" Width="800" WindowStyle="None">
@@ -16,7 +15,7 @@
 
             <Border Background="{StaticResource PanelsBrush}" MouseLeftButtonDown="TopBar_MouseDown">
                 <Grid>
-                    <TextBlock x:Name="Title" Text="SAMPLE" Foreground="{StaticResource PrimaryTextBrush}" FontSize="16" FontWeight="Bold"
+                    <TextBlock x:Name="TitleTextBlock" Text="SAMPLE" Foreground="{StaticResource PrimaryTextBrush}" FontSize="16" FontWeight="Bold"
                                VerticalAlignment="Center" Margin="16,0"/>
                 </Grid>
             </Border>

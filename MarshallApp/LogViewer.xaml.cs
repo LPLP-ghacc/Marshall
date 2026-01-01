@@ -10,6 +10,8 @@ public partial class LogViewer
         InitializeComponent();
         Log.Text = $"Output — {scriptName}";
         Output.Text = output;
+        
+        this.SizeToContent = SizeToContent.WidthAndHeight;
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => this.Close();

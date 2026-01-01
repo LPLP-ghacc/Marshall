@@ -27,7 +27,7 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace MarshallApp;
 
-public partial class MainWindow : INotifyPropertyChanged
+public partial class MainWindow
 {
     public static MainWindow Instance { get; private set; } = null!;
     public UserSettings? Settings;
@@ -40,7 +40,6 @@ public partial class MainWindow : INotifyPropertyChanged
     public WallpaperController? WallControl;
     private readonly DispatcherTimer _wallpaperTimer = new();
     private readonly DispatcherTimer _loggerTimer = new();
-    public event PropertyChangedEventHandler? PropertyChanged;
     private readonly List<UIElement> _mainFieldElements = [];
 
     public MainWindow()
@@ -61,7 +60,7 @@ public partial class MainWindow : INotifyPropertyChanged
 
         WallpaperControlInit();
         
-        Top.MouseDown += (_, e) =>
+        TopBorder.MouseDown += (_, e) =>
         {
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
@@ -154,75 +153,76 @@ public partial class MainWindow : INotifyPropertyChanged
 
         _trayIcon.Text = App.APPNAME;
         _trayIcon.ContextMenuStrip = new ContextMenuStrip();
-
-        _trayIcon.MouseUp += TrayIcon_MouseUp;
-    }
-
-    private void TrayIcon_MouseUp(object? sender, MouseEventArgs e)
-    {
-        if (e.Button == MouseButtons.Left)
-        {
-            WindowStyle = WindowStyle.None;
-            ResizeMode = ResizeMode.NoResize;
-            MaxWidth = SystemParameters.WorkArea.Width;
-            MaxHeight = SystemParameters.WorkArea.Height;
-            WindowState = WindowState.Normal;
-
-            FullscreenEnter.Visibility = Visibility.Collapsed;
-            FullscreenExit.Visibility = Visibility.Visible;
-            Show();
-        }
-        else
-        {
-            var menu = _trayIcon?.ContextMenuStrip;
-            Debug.Assert(menu != null, nameof(menu) + " != null");
         
-            menu.Items.Clear();
+        _trayIcon.MouseUp += TrayIconMouseUp;
+        return;
 
-            menu.Items.Add("Running scripts:").Enabled = false;
-            menu.Items.Add(new ToolStripSeparator());
-
-            if (Blocks.Count == 0)
+        void TrayIconMouseUp(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
             {
-                menu.Items.Add("(no scripts)").Enabled = false;
+                WindowStyle = WindowStyle.None;
+                ResizeMode = ResizeMode.NoResize;
+                MaxWidth = SystemParameters.WorkArea.Width;
+                MaxHeight = SystemParameters.WorkArea.Height;
+                WindowState = WindowState.Normal;
+
+                FullscreenEnter.Visibility = Visibility.Collapsed;
+                FullscreenExit.Visibility = Visibility.Visible;
+                Show();
             }
             else
             {
-                foreach (var block in Blocks)
+                var menu = _trayIcon?.ContextMenuStrip;
+                Debug.Assert(menu != null, nameof(menu) + " != null");
+        
+                menu.Items.Clear();
+
+                menu.Items.Add("Running scripts:").Enabled = false;
+                menu.Items.Add(new ToolStripSeparator());
+
+                if (Blocks.Count == 0)
                 {
-                    var name = string.IsNullOrEmpty(block.FilePath)
-                        ? "(unnamed)"
-                        : Path.GetFileName(block.FilePath);
-
-                    var item = new ToolStripMenuItem(name);
-
-                    item.Click += (_, _) => ShowLogViewer(block);
-
-                    if (block.IsLooping)
-                        item.ForeColor = Color.Green;
-                    else if (block.IsRunning)
-                        item.ForeColor = Color.Blue;
-
-                    menu.Items.Add(item);
+                    menu.Items.Add("(no scripts)").Enabled = false;
                 }
+                else
+                {
+                    foreach (var block in Blocks)
+                    {
+                        var name = string.IsNullOrEmpty(block.FilePath)
+                            ? "(unnamed)"
+                            : Path.GetFileName(block.FilePath);
+
+                        var item = new ToolStripMenuItem(name);
+
+                        item.Click += (_, _) => ShowLogViewer(block);
+
+                        if (block.IsLooping)
+                            item.ForeColor = Color.Green;
+                        else if (block.IsRunning)
+                            item.ForeColor = Color.Blue;
+
+                        menu.Items.Add(item);
+                    }
+                }
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                var exit = new ToolStripMenuItem("Exit");
+                exit.Click += async (_, _) => 
+                {
+                    await ConfigManager.SaveAppConfigAsync();
+                    Environment.Exit(0);
+                };
+
+                menu.Items.Add(exit);
+
+                menu.Show(System.Windows.Forms.Cursor.Position);
             }
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            var exit = new ToolStripMenuItem("Exit");
-            exit.Click += async (_, _) => 
-            {
-                await ConfigManager.SaveAppConfigAsync();
-                Environment.Exit(0);
-            };
-
-            menu.Items.Add(exit);
-
-            menu.Show(System.Windows.Forms.Cursor.Position);
         }
     }
     
-    public void ShowLogViewer(BlockElement block)
+    public static void ShowLogViewer(BlockElement block)
     {
         var name = block.FilePath != null
             ? Path.GetFileName(block.FilePath)
@@ -231,20 +231,12 @@ public partial class MainWindow : INotifyPropertyChanged
         var window = new LogViewer(
             name,
             block.OutputText.Text
-        )
-        {
-            Owner = this
-        };
+        );
 
         window.Show();
     }
 
-    private void NewScript()
-    {
-        CodeEditor.NewScript();
-    }
-
-
+    private void NewScript() => CodeEditor.NewScript();
     
     #region Top Panel Menu
     
@@ -425,28 +417,19 @@ public partial class MainWindow : INotifyPropertyChanged
     
     private int GetInsertIndex(Point mousePos)
     {
-        var bestIndex = 0;
-        var bestDistance = double.MaxValue;
-
-        for (var i = 0; i < MainCanvas.Children.Count; i++)
+        int low = 0, high = Blocks.Count - 1;
+        while (low <= high)
         {
-            var child = MainCanvas.Children[i];
-            var transform = child.TransformToAncestor(MainCanvas);
-            var rect = transform.TransformBounds(new Rect(0, 0, child.RenderSize.Width, child.RenderSize.Height));
+            var mid = (low + high) / 2;
+            var child = Blocks[mid];
+            var top = Canvas.GetTop(child);
+            var height = child.ActualHeight;
+            var centerY = top + height / 2;
 
-            var centerY = rect.Top + rect.Height / 2;
-            var centerX = rect.Left + rect.Width / 2;
-
-            var dx = mousePos.X - centerX;
-            var dy = mousePos.Y - centerY;
-            var dist = dx * dx + dy * dy;
-
-            if (!(dist < bestDistance)) continue;
-            bestDistance = dist;
-            bestIndex = i;
+            if (mousePos.Y < centerY) high = mid - 1;
+            else low = mid + 1;
         }
-
-        return bestIndex;
+        return low;
     }
     
     private void MoveBlockElement(BlockElement element, int newIndex)

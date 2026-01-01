@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" MouseLeftButtonDown="UIElement_OnMouseLeftButtonDown">
-            <Border x:Name="Top" Grid.ColumnSpan="5" >
+            <Border x:Name="TopBorder" Grid.ColumnSpan="5" >
                 <Border.Effect>
                     <BlurEffect Radius="1" RenderingBias="Performance"/>
                 </Border.Effect>

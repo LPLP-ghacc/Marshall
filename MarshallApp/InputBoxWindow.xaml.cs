@@ -12,7 +12,7 @@ public partial class InputBoxWindow
         InitializeComponent();
 
         _okCallback = okCallback;
-        Title.Text =  title;
+        TitleTextBlock.Text =  title;
         DescTextField.Text = desc;
         Input.Text = defaultValue;
     }

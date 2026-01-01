@@ -11,7 +11,7 @@ public partial class NotificationWindow : Window
     public NotificationWindow(string title, string message, Action ok, Action cancel)
     {
         InitializeComponent();
-        Title.Text = title;
+        TitleTextBlock.Text = title;
         DescTextField.Text = message;
         OnOkButtonCLick = ok;
         OnCancelButtonCLick = cancel;
