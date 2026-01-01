@@ -43,53 +43,61 @@ public partial class ProjectCreationWindow
         });
     }
 
-    private void Create_Click(object sender, RoutedEventArgs e)
+    private async void Create_Click(object sender, RoutedEventArgs e)
     {
-        var name = ProjectNameBox.Text.Trim();
-        var baseFolder = LocationBox.Text.Trim();
-        
-        if (!string.IsNullOrWhiteSpace(ProjectNameBox.Text) &&
-            !string.IsNullOrWhiteSpace(LocationBox.Text))
+        try
         {
-            FinalPathLabel.Text = 
-                Path.Combine(LocationBox.Text, ProjectNameBox.Text);
-        }
-
-        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(baseFolder))
-        {
-            MessageBox.Show("Fill all fields.", "Error");
-            return;
-        }
-
-        var projectFolder = Path.Combine(baseFolder, name);
-
-        ResultProject = ProjectManager.CreateNewProject(projectFolder, name);
-        var file = Path.Combine(projectFolder, name + ProjectManager.ProjectExtension);
-        ConfigManager.AddRecentProject(file);
+            var name = ProjectNameBox.Text.Trim();
+            var baseFolder = LocationBox.Text.Trim();
         
-        this.DialogResult = true;
+            if (!string.IsNullOrWhiteSpace(ProjectNameBox.Text) &&
+                !string.IsNullOrWhiteSpace(LocationBox.Text))
+            {
+                FinalPathLabel.Text = 
+                    Path.Combine(LocationBox.Text, ProjectNameBox.Text);
+            }
+
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(baseFolder))
+            {
+                MessageBox.Show("Fill all fields.", "Error");
+                return;
+            }
+
+            var projectFolder = Path.Combine(baseFolder, name);
+
+            ResultProject = ProjectManager.CreateNewProject(projectFolder, name);
+            var file = Path.Combine(projectFolder, name + ProjectManager.ProjectExtension);
+            await ConfigManager.AddRecentProjectAsync(file);
+        
+            this.DialogResult = true;
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => this.DialogResult = false;
     private void Close_Click(object sender, RoutedEventArgs e) => this.DialogResult = false;
     private void UIElement_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e) => this.DragMove();
 
-    private void Browse_Click(object sender, RoutedEventArgs e)
+    private async void Browse_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
+        try
         {
-            Filter = "Marshall Project (*.mpr)|*.mpr",
-            Title = "Open Marshall Project"
-        };
-        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Marshall Project (*.mpr)|*.mpr",
+                Title = "Open Marshall Project"
+            };
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
         
-        var project = ProjectManager.LoadProject(dialog.FileName);
-        ConfigManager.AddRecentProject(dialog.FileName);
+            var project = await ProjectManager.LoadProjectAsync(dialog.FileName);
+            await ConfigManager.AddRecentProjectAsync(dialog.FileName);
         
-        $"Project {project.ProjectName} has opened.".Log();
+            $"Project {project.ProjectName} has opened.".Log();
 
-        ResultProject = project;
+            ResultProject = project;
         
-        DialogResult = true;
+            DialogResult = true;
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 }

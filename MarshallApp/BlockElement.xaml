@@ -6,9 +6,7 @@
              mc:Ignorable="d" MinWidth="280" MinHeight="60"
              MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
              MouseMove="UserControl_MouseMove"
-             MouseLeftButtonUp="UserControl_MouseLeftButtonUp" 
-             MouseLeave="BlockElement_OnMouseLeave" 
-             MouseEnter="BlockElement_OnMouseEnter">
+             MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
     <Border x:Name="MainBorder" BorderBrush="#666" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
@@ -93,9 +91,7 @@
                                PreviewMouseWheel="OutputText_MouseWheel" Loaded="OnOutputLoaded" MouseRightButtonDown="OutputText_OnMouseRightButtonDown"
                                MouseLeftButtonDown="UserControl_MouseLeftButtonDown"
                                MouseMove="UserControl_MouseMove"
-                               MouseLeftButtonUp="UserControl_MouseLeftButtonUp" 
-                               MouseLeave="BlockElement_OnMouseLeave" 
-                               MouseEnter="BlockElement_OnMouseEnter">
+                               MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
                         <TextBlock.ContextMenu>
                             <ContextMenu x:Name="Menu" Style="{StaticResource DarkContextMenuStyle}">
                                 <MenuItem Header="Select .py file..." Click="SelectPythonFile_Click"/>

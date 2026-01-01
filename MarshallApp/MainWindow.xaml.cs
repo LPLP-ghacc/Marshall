@@ -210,9 +210,9 @@ public partial class MainWindow : INotifyPropertyChanged
             menu.Items.Add(new ToolStripSeparator());
 
             var exit = new ToolStripMenuItem("Exit");
-            exit.Click += (_, _) => 
+            exit.Click += async (_, _) => 
             {
-                ConfigManager.SaveAppConfig();
+                await ConfigManager.SaveAppConfigAsync();
                 Environment.Exit(0);
             };
 
@@ -244,13 +244,7 @@ public partial class MainWindow : INotifyPropertyChanged
         CodeEditor.NewScript();
     }
 
-    public void RemoveBlockElement(BlockElement element)
-    {
-        Blocks.Remove(element);
-        MainCanvas.Children.Remove(element);
 
-        ConfigManager.SaveAppConfig();
-    }
     
     #region Top Panel Menu
     
@@ -285,9 +279,24 @@ public partial class MainWindow : INotifyPropertyChanged
         e.Handled = true;
     }
     
+    public async Task RemoveBlockElement(BlockElement element)
+    {
+        Blocks.Remove(element);
+        MainCanvas.Children.Remove(element);
+
+        await ConfigManager.SaveAppConfigAsync();
+    }
+    
     private void AddBlock_Click(object sender, RoutedEventArgs e)
     {
-        var block = new BlockElement(RemoveBlockElement, LimitSettings);
+        var block = new BlockElement(async void (block) =>
+        {
+            try
+            {
+                await RemoveBlockElement(block);
+            }
+            catch (Exception exception) { exception.Message.Log(); }
+        }, LimitSettings);
         AddBlockElement(block);
     }
     
@@ -321,10 +330,14 @@ public partial class MainWindow : INotifyPropertyChanged
 
     #region LoadSaving things
     
-    protected override void OnClosing(CancelEventArgs e)
+    protected override async void OnClosing(CancelEventArgs e)
     {
-        base.OnClosing(e);
-        ConfigManager.SaveAppConfig();
+        try
+        {
+            base.OnClosing(e);
+            await ConfigManager.SaveAppConfigAsync();
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 
     #endregion
@@ -354,17 +367,30 @@ public partial class MainWindow : INotifyPropertyChanged
         }
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e)
+    private async void Close_Click(object sender, RoutedEventArgs e)
     {
-        if (!Settings!.MinimizeToTrayOnClose)
+        try
         {
-            ConfigManager.SaveAppConfig();
-            Environment.Exit(0);
-        }else
-        {
-            WindowState = WindowState.Minimized;
-            Hide();
+            if (!Settings!.MinimizeToTrayOnClose)
+            {
+                await ConfigManager.SaveAppConfigAsync();
+                Environment.Exit(0);
+            }
+            else
+            {
+                WindowState = WindowState.Minimized;
+                Hide();
+            }
         }
+        catch (Exception exception) { exception.Message.Log(); }
+    }
+    
+    protected override void OnClosed(EventArgs e)
+    {
+        _wallpaperTimer.Stop();
+        _loggerTimer.Stop();
+        _trayIcon?.Dispose();
+        base.OnClosed(e);
     }
     
     #endregion
@@ -378,19 +404,23 @@ public partial class MainWindow : INotifyPropertyChanged
         e.Handled = true;
     }
 
-    private void MStackPanel_Drop(object sender, DragEventArgs e)
+    private async void MStackPanel_Drop(object sender, DragEventArgs e)
     {
-        if (!e.Data.GetDataPresent(typeof(BlockElement))) return;
+        try
+        {
+            if (!e.Data.GetDataPresent(typeof(BlockElement))) return;
 
-        var dragged = (BlockElement?)e.Data.GetData(typeof(BlockElement));
+            var dragged = (BlockElement?)e.Data.GetData(typeof(BlockElement));
 
-        var mousePos = e.GetPosition(MainCanvas);
+            var mousePos = e.GetPosition(MainCanvas);
 
-        var insertIndex = GetInsertIndex(mousePos);
+            var insertIndex = GetInsertIndex(mousePos);
 
-        if (dragged != null) MoveBlockElement(dragged, insertIndex);
+            if (dragged != null) MoveBlockElement(dragged, insertIndex);
 
-        ConfigManager.SaveAppConfig();
+            await ConfigManager.SaveAppConfigAsync();
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
     
     private int GetInsertIndex(Point mousePos)
@@ -454,18 +484,22 @@ public partial class MainWindow : INotifyPropertyChanged
 
     private void Minimize_OnClick_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
-    private void NewProjectButton_OnClick(object sender, RoutedEventArgs e)
+    private async void NewProjectButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var window = new ProjectCreationWindow
+        try
         {
-            Owner = this
-        };
+            var window = new ProjectCreationWindow
+            {
+                Owner = this
+            };
 
-        if (window.ShowDialog() != true) return;
-        CurrentProject = window.ResultProject;
-        SetProjectName(CurrentProject?.ProjectName!);
-        ConfigManager.SaveAppConfig();
-        ClearBlocks();
+            if (window.ShowDialog() != true) return;
+            CurrentProject = window.ResultProject;
+            SetProjectName(CurrentProject?.ProjectName!);
+            await ConfigManager.SaveAppConfigAsync();
+            ClearBlocks();
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 
     private void OpenProject_OnClick(object sender, RoutedEventArgs e)
@@ -542,15 +576,15 @@ public partial class MainWindow : INotifyPropertyChanged
                 Style = ((Style?)Application.Current.Resources["DarkMenuItemStyle"] ?? throw new InvalidOperationException())
             };
             
-            selector.Click += (o, _) =>
+            selector.Click += async (o, _) =>
             {
                 var button = o as MenuItem;
                 if (button?.ToolTip is not string file) return;
 
-                ConfigManager.SaveAppConfig();
+                await ConfigManager.SaveAppConfigAsync();
 
-                CurrentProject = ProjectManager.LoadProject(file);
-                ConfigManager.AddRecentProject(file);
+                CurrentProject = await ProjectManager.LoadProjectAsync(file);
+                await ConfigManager.AddRecentProjectAsync(file);
 
                 ClearBlocks();
 

@@ -131,43 +131,51 @@ public partial class ScriptBrowserPanel
             "No recent projects".Log();
             return;
         }
-        recentProjects.ForEach(path =>
+        
+        recentProjects.ForEach(async void (path) =>
         {
-            path.Log();
-            var project = ProjectManager.LoadProject(path);
+            try
+            {
+                path.Log();
+                var project = await ProjectManager.LoadProjectAsync(path);
             
-            var style = ((Style?)Application.Current.FindResource("ModernTreeViewItemStyle"))! ?? throw new InvalidOperationException();
-            var root = new TreeViewItem
-            {
-                Header = project.ProjectName.ToUpper(),
-                Tag = project,
-                Style = style
-            };
-
-            foreach (var block in project.Blocks)
-            {
-                var blockNode = new TreeViewItem
+                var style = ((Style?)Application.Current.FindResource("ModernTreeViewItemStyle"))! ?? throw new InvalidOperationException();
+                var root = new TreeViewItem
                 {
-                    Header = Path.GetFileName(block.PythonFilePath ?? "(no file)"),
-                    Tag = block,
+                    Header = project.ProjectName.ToUpper(),
+                    Tag = project,
                     Style = style
                 };
 
-                if (block.PythonFilePath != null)
-                    blockNode.Items.Add(new TreeViewItem
-                        { Header = $"Python File: {GetShortPath(block.PythonFilePath)}", Style = style, ToolTip = block.PythonFilePath });
-                blockNode.Items.Add(new TreeViewItem { Header = $"Looping: {block.IsLooping}", Style = style });
-                blockNode.Items.Add(new TreeViewItem { Header = $"Interval: {block.LoopIntervalSeconds}s", Style = style });
-                blockNode.Items.Add(new TreeViewItem { Header = $"Font Size: {block.OutputFontSize}", Style = style });
-                blockNode.Items.Add(new TreeViewItem { Header = $"Position: ({block.X}, {block.Y})", Style = style });
-                blockNode.Items.Add(new TreeViewItem { Header = $"Size: {block.WidthUnits} × {block.HeightUnits}", Style = style });
+                Dispatcher.Invoke(() =>
+                {
+                    foreach (var block in project.Blocks)
+                    {
+                        var blockNode = new TreeViewItem
+                        {
+                            Header = Path.GetFileName(block.PythonFilePath ?? "(no file)"),
+                            Tag = block,
+                            Style = style
+                        };
 
-                root.Items.Add(blockNode);
+                        if (block.PythonFilePath != null)
+                            blockNode.Items.Add(new TreeViewItem
+                                { Header = $"Python File: {GetShortPath(block.PythonFilePath)}", Style = style, ToolTip = block.PythonFilePath });
+                        blockNode.Items.Add(new TreeViewItem { Header = $"Looping: {block.IsLooping}", Style = style });
+                        blockNode.Items.Add(new TreeViewItem { Header = $"Interval: {block.LoopIntervalSeconds}s", Style = style });
+                        blockNode.Items.Add(new TreeViewItem { Header = $"Font Size: {block.OutputFontSize}", Style = style });
+                        blockNode.Items.Add(new TreeViewItem { Header = $"Position: ({block.X}, {block.Y})", Style = style });
+                        blockNode.Items.Add(new TreeViewItem { Header = $"Size: {block.WidthUnits} × {block.HeightUnits}", Style = style });
+
+                        root.Items.Add(blockNode);
+                    }
+
+                    ProjectTree.Items.Add(root);
+                });
+                
+                root.IsExpanded = true;
             }
-
-            ProjectTree.Items.Add(root);
-            
-            root.IsExpanded = true;
+            catch (Exception exception) { exception.Message.Log(); }
         });
     }
 
@@ -226,45 +234,53 @@ public partial class ScriptBrowserPanel
         mainWindow.OpenUiElement(mainWindow.MainCanvas, mainWindow.MainCanvasShowButton);
     }
 
-    private void New_Click(object sender, RoutedEventArgs e)
+    private async void New_Click(object sender, RoutedEventArgs e)
     {
-        var mainWindow = MainWindow.Instance;
-        
-        var window = new ProjectCreationWindow
+        try
         {
-            Owner = mainWindow
-        };
+            var mainWindow = MainWindow.Instance;
         
-        if (window.ShowDialog() != true) return;
-        mainWindow.CurrentProject = window.ResultProject;
-        mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
-        ConfigManager.SaveAppConfig();
-        mainWindow.ClearBlocks();
+            var window = new ProjectCreationWindow
+            {
+                Owner = mainWindow
+            };
         
-        mainWindow.OpenUiElement(mainWindow.MainCanvas, mainWindow.MainCanvasShowButton);
+            if (window.ShowDialog() != true) return;
+            mainWindow.CurrentProject = window.ResultProject;
+            mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
+            await ConfigManager.SaveAppConfigAsync();
+            mainWindow.ClearBlocks();
+        
+            mainWindow.OpenUiElement(mainWindow.MainCanvas, mainWindow.MainCanvasShowButton);
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 
-    private void Browse_Click(object sender, RoutedEventArgs e)
+    private async void Browse_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
+        try
         {
-            Filter = "Marshall Project (*.mpr)|*.mpr",
-            Title = "Open Marshall Project"
-        };
-        dialog.InitialDirectory = App.DefaultMarshallProjectsPath;
-        if (dialog.ShowDialog()  != DialogResult.OK) return;
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Marshall Project (*.mpr)|*.mpr",
+                Title = "Open Marshall Project"
+            };
+            dialog.InitialDirectory = App.DefaultMarshallProjectsPath;
+            if (dialog.ShowDialog()  != DialogResult.OK) return;
         
-        var mainWindow = MainWindow.Instance;
+            var mainWindow = MainWindow.Instance;
 
-        ConfigManager.SaveAppConfig();
-        var project = ProjectManager.LoadProject(dialog.FileName);
-        ConfigManager.AddRecentProject(dialog.FileName);
-        $"Project {project.ProjectName} has opened.".Log();
-        mainWindow.CurrentProject = project;
-        mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
-        if (mainWindow.CurrentProject != null) ConfigManager.LoadBlocksFromProject(mainWindow.CurrentProject);
+            await ConfigManager.SaveAppConfigAsync();
+            var project = await ProjectManager.LoadProjectAsync(dialog.FileName);
+            await ConfigManager.AddRecentProjectAsync(dialog.FileName);
+            $"Project {project.ProjectName} has opened.".Log();
+            mainWindow.CurrentProject = project;
+            mainWindow.SetProjectName(mainWindow.CurrentProject?.ProjectName!);
+            if (mainWindow.CurrentProject != null) ConfigManager.LoadBlocksFromProject(mainWindow.CurrentProject);
         
-        mainWindow.OpenUiElement(mainWindow.MainCanvas, mainWindow.MainCanvasShowButton);
+            mainWindow.OpenUiElement(mainWindow.MainCanvas, mainWindow.MainCanvasShowButton);
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
 
     private async void RunScript_Click(object? sender, RoutedEventArgs? e)

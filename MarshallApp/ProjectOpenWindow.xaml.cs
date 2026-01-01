@@ -49,14 +49,18 @@ public partial class ProjectOpenWindow
         DialogResult = true;
     }
 
-    private void OpenProject(string file)
+    private async void OpenProject(string file)
     {
-        ConfigManager.SaveAppConfig();
-        ResultProject = ProjectManager.LoadProject(file);
-        ConfigManager.AddRecentProject(file);
+        try
+        {
+            await ConfigManager.SaveAppConfigAsync();
+            ResultProject = await ProjectManager.LoadProjectAsync(file);
+            await ConfigManager.AddRecentProjectAsync(file);
         
-        MainWindow.Instance.SetProjectName(ResultProject.ProjectName);
-        $"Project {ResultProject.ProjectName} has opened.".Log();
+            MainWindow.Instance.SetProjectName(ResultProject.ProjectName);
+            $"Project {ResultProject.ProjectName} has opened.".Log();
+        }
+        catch (Exception exception) { exception.Message.Log(); }
     }
     
     private void InitRecentProjectsButtons(List<string> recentProjects)

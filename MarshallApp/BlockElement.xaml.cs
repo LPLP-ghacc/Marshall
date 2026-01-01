@@ -35,7 +35,7 @@ public partial class BlockElement
     public double OutputFontSize { get; set; } = 14.0;
     public bool IsRunning => _activeProcess is { HasExited: false };
     
-    public BlockElement(Action<BlockElement>? removeCallback, LimitSettings limitSettings)
+    public BlockElement(Action<BlockElement> removeCallback, LimitSettings limitSettings)
     {
         InitializeComponent();
 
@@ -171,7 +171,7 @@ public partial class BlockElement
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         StopLoop();
-        _removeCallback?.Invoke(this);
+        _removeCallback!.Invoke(this);
     }
     
     private void Close_Click(object sender, RoutedEventArgs e)
@@ -469,7 +469,7 @@ public partial class BlockElement
                 using var process = Process.Start(psi);
                 if (process != null)
                 {
-                    var output = await process.StandardOutput.ReadToEndAsync();
+                    _ = await process.StandardOutput.ReadToEndAsync();
                 }
 
                 if (process != null)
@@ -767,15 +767,5 @@ public partial class BlockElement
 
         Canvas.SetLeft(this, newLeft);
         Canvas.SetTop(this, newTop);
-    }
-    
-    private void BlockElement_OnMouseEnter(object sender, MouseEventArgs e)
-    {
-        //MainBorder.BorderThickness = new Thickness(2);
-    }
-    
-    private void BlockElement_OnMouseLeave(object sender, MouseEventArgs e)
-    {
-        //MainBorder.BorderThickness = new Thickness(1);
     }
 }

@@ -6,7 +6,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 using MarshallApp.Models;
-using Color = System.Drawing.Color;
 
 namespace MarshallApp.Services;
 

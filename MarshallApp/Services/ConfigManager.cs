@@ -17,10 +17,10 @@ public static class ConfigManager
     public static List<string> RecentProjects =>
         AppConfig?.RecentProjects ?? [];
 
-    private static void Save(AppConfig config)
+    private static async Task SaveAsync(AppConfig config)
     {
         var json = JsonSerializer.Serialize(config, Options);
-        File.WriteAllText(ConfigPath, json);
+        await File.WriteAllTextAsync(ConfigPath, json);
     }
 
     private static async Task<AppConfig> Load()
@@ -40,7 +40,7 @@ public static class ConfigManager
         }
     }
     
-    public static void AddRecentProject(string path)
+    public static async Task AddRecentProjectAsync(string path)
     {
         AppConfig ??= AppConfig.Default;
 
@@ -56,7 +56,7 @@ public static class ConfigManager
         if (AppConfig.RecentProjects.Count > MaxRecent)
             AppConfig.RecentProjects.RemoveAt(AppConfig.RecentProjects.Count - 1);
 
-        Save(AppConfig);
+        await SaveAsync(AppConfig);
     }
     
     public static async Task LoadAllConfigs()
@@ -74,7 +74,7 @@ public static class ConfigManager
                 $"No last project to load. Path='{AppConfig.LastProjectPath}' Exists={File.Exists(AppConfig.LastProjectPath ?? "")}".Log();
                 return;
             }
-            var project = ProjectManager.LoadProject(AppConfig.LastProjectPath);
+            var project = await ProjectManager.LoadProjectAsync(AppConfig.LastProjectPath);
             
             MainWindow.Instance.Dispatcher.Invoke(() =>
             {
@@ -91,7 +91,7 @@ public static class ConfigManager
         }
     }
     
-    public static void SaveAppConfig()
+    public static async Task SaveAppConfigAsync()
     {
         var instance = MainWindow.Instance;
         
@@ -108,14 +108,14 @@ public static class ConfigManager
             );
         }
 
-        SaveCurrentProject();
+        await SaveCurrentProject();
 
         $"Project {instance.CurrentProject?.ProjectName} has been saved to {AppConfig.LastProjectPath}".Log();
         
-        Save(AppConfig);
+        await SaveAsync(AppConfig);
     }
 
-    private static void SaveCurrentProject()
+    private static async Task SaveCurrentProject()
     {
         var instance = MainWindow.Instance;
         Debug.Assert(instance != null, nameof(instance) + " != null");
@@ -137,7 +137,7 @@ public static class ConfigManager
             });
         }
 
-        ProjectManager.SaveProject(instance.CurrentProject);
+        await ProjectManager.SaveProjectAsync(instance.CurrentProject);
     }
 
     public static void LoadBlocksFromProject(Project project)
@@ -152,7 +152,14 @@ public static class ConfigManager
         {
             $"{cfg.PythonFilePath}".Log();
             
-            var block = new BlockElement(instance.RemoveBlockElement, instance.LimitSettings)
+            var block = new BlockElement(async void (block) =>
+            {
+                try
+                {
+                    await instance.RemoveBlockElement(block);
+                }
+                catch (Exception exception) { exception.Message.Log(); }
+            }, instance.LimitSettings)
             {
                 FilePath = cfg.PythonFilePath,
                 IsLooping = cfg.IsLooping,

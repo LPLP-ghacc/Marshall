@@ -8,18 +8,18 @@ public abstract class ProjectManager
 {
     public const string ProjectExtension = ".mpr";
     
-    public static void SaveProject(Project project)
+    public static async Task SaveProjectAsync(Project project)
     {
         var filePath = Path.Combine(project.ProjectPath, project.ProjectName + ProjectExtension);
 
         var json = JsonSerializer.Serialize(project, ConfigManager.Options);
-        File.WriteAllText(filePath, json);
+        await File.WriteAllTextAsync(filePath, json);
     }
 
-    public static Project LoadProject(string filePath)
+    public static async Task<Project> LoadProjectAsync(string filePath)
     {
         $"Trying to load project {filePath}".Log();
-        var json = File.ReadAllText(filePath);
+        var json = await File.ReadAllTextAsync(filePath);
         return JsonSerializer.Deserialize<Project>(json)
                ?? throw new Exception("Invalid project file.");
     }
@@ -31,7 +31,7 @@ public abstract class ProjectManager
 
         var project = new Project(name, folder, []);
 
-        SaveProject(project);
+        SaveProjectAsync(project);
         $"Created and saved {project.ProjectName}".Log();
         return project;
     }
